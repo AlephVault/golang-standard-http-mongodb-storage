@@ -24,6 +24,14 @@ func WithClientOptions() *ConnectionOptions {
 	return &ConnectionOptions{timeout: 10}
 }
 
+// SetTimeout sets the timeout for the connection options.
+func (options *ConnectionOptions) SetTimeout(timeout int64) *ConnectionOptions {
+	if timeout > 0 {
+		options.timeout = timeout
+	}
+	return options
+}
+
 // ConnectWithFields makes a client out of the given input arguments.
 func ConnectWithFields(
 	host string, port string, username string, password string, options *ConnectionOptions,
