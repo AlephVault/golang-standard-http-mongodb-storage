@@ -2,6 +2,7 @@ package formats
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -42,15 +43,12 @@ func (ct *Time) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	var lastError error
 	for _, dateTimeFormat := range dateTimeFormats {
 		t, err := time.Parse(dateTimeFormat, str)
 		if err == nil {
 			*ct = Time(t)
 			return nil
-		} else {
-			lastError = err
 		}
 	}
-	return lastError
+	return fmt.Errorf("time data '%s' does not match any of the available formats", str)
 }
