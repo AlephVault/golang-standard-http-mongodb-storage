@@ -5,4 +5,10 @@ type Settings struct {
 	Debug      bool
 	Connection Connection
 	Global     Global `validate:"dive"`
+	Auth       Auth   `validate:"dive"`
+}
+
+// Prepare prepares the default values of all the members.
+func (settings *Settings) Prepare() {
+	settings.Auth.Prepare()
 }
