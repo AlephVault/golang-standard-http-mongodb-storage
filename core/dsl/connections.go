@@ -77,3 +77,8 @@ func (c *Connection) Disconnect() error {
 	options := connections.WithClientOptions().SetTimeout(c.Timeout)
 	return connections.Disconnect(c.client, options)
 }
+
+// Client returns the underlying client, if any.
+func (c *Connection) Client() *mongo.Client {
+	return c.client
+}
