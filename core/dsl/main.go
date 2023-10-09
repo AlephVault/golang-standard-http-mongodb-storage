@@ -10,5 +10,6 @@ type Settings struct {
 
 // Prepare prepares the default values of all the members.
 func (settings *Settings) Prepare() {
+	settings.Connection.Prepare()
 	settings.Auth.Prepare()
 }

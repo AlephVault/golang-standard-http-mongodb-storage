@@ -27,16 +27,9 @@ type Connection struct {
 	client  *mongo.Client
 }
 
-// Connect attempts a new connection.
-func (c *Connection) Connect() (*mongo.Client, error) {
-	if c.client != nil {
-		return c.client, nil
-	}
-
-	options := connections.WithClientOptions().SetTimeout(c.Timeout)
-	if c.Url != "" {
-		return connections.ConnectWithURL(c.Url, options)
-	} else {
+// Prepare installs default values in the connection.
+func (c *Connection) Prepare() {
+	if c.Url == "" {
 		if c.Args.Host == "" {
 			if host, found := os.LookupEnv("MONGODB_HOST"); !found {
 				c.Args.Host = "localhost"
@@ -59,6 +52,19 @@ func (c *Connection) Connect() (*mongo.Client, error) {
 		if c.Args.Password == "" {
 			c.Args.Password = os.Getenv("MONGODB_PASSWORD")
 		}
+	}
+}
+
+// Connect attempts a new connection.
+func (c *Connection) Connect() (*mongo.Client, error) {
+	if c.client != nil {
+		return c.client, nil
+	}
+
+	options := connections.WithClientOptions().SetTimeout(c.Timeout)
+	if c.Url != "" {
+		return connections.ConnectWithURL(c.Url, options)
+	} else {
 		if cli, err := connections.ConnectWithFields(c.Args.Host, c.Args.Port, c.Args.Username, c.Args.Password, options); err != nil {
 			c.client = nil
 			return cli, nil
