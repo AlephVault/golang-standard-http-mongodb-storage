@@ -23,11 +23,18 @@ func regexFunction(regex *regexp.Regexp) func(fl validator.FieldLevel) bool {
 	}
 }
 
-// Validate uses the validator framework, actually.
-// The validation is run against the class, so no
-// further schema is needed.
-func Validate(value any) error {
+// makeValidator creates the validator we need for this all.
+func makeValidator() *validator.Validate {
 	v := validator.New()
 	v.RegisterValidation("mdb-name", regexFunction(rxMongoName))
-	return (validator.New()).Struct(value)
+	return v
+}
+
+var (
+	currentValidator = makeValidator()
+)
+
+// Validator returns the only validator we need and will be using.
+func Validator() *validator.Validate {
+	return currentValidator
 }
