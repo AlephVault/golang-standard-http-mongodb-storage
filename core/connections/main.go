@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/mongo"
+	mongodboptions "go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -23,18 +24,22 @@ func WithClientOptions() *ConnectionOptions {
 	return &ConnectionOptions{timeout: 10}
 }
 
-// Connect makes a client out of the given input arguments.
-func Connect(
+// ConnectWithFields makes a client out of the given input arguments.
+func ConnectWithFields(
 	host string, port string, username string, password string, options *ConnectionOptions,
 ) (*mongo.Client, error) {
+	return ConnectWithURL(fmt.Sprintf("mongodb://%s:%s@%s:%s", host, port, username, password), options)
+}
+
+// ConnectWithURL makes a client out of the given input URL.
+func ConnectWithURL(url string, options *ConnectionOptions) (*mongo.Client, error) {
 	if options == nil {
 		options = WithClientOptions()
 	}
 
-	url := fmt.Sprintf("mongodb://%s:%s@%s:%s", host, port, username, password)
 	timeoutContext, cancel := makeTimeoutContext(options.timeout)
 	defer cancel()
-	return mongo.Connect(timeoutContext, options.Client().ApplyURI(url))
+	return mongo.Connect(timeoutContext, mongodboptions.Client().ApplyURI(url))
 }
 
 // Disconnect disconnect.
