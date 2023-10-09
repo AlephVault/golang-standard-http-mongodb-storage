@@ -34,7 +34,7 @@ func (options *ConnectionOptions) SetTimeout(timeout int64) *ConnectionOptions {
 
 // ConnectWithFields makes a client out of the given input arguments.
 func ConnectWithFields(
-	host string, port string, username string, password string, options *ConnectionOptions,
+	host string, port uint16, username string, password string, options *ConnectionOptions,
 ) (*mongo.Client, error) {
 	return ConnectWithURL(fmt.Sprintf("mongodb://%s:%s@%s:%s", host, port, username, password), options)
 }
