@@ -6,5 +6,5 @@ import "github.com/go-playground/validator/v10"
 // The validation is run against the class, so no
 // further schema is needed.
 func Validate(value any) error {
-	return (&validator.Validate{}).Struct(value)
+	return (validator.New()).Struct(value)
 }
