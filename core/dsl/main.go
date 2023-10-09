@@ -4,4 +4,5 @@ package dsl
 type Settings struct {
 	Debug      bool
 	Connection Connection
+	Global     Global `validate:"dive"`
 }
