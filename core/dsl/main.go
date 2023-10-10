@@ -6,7 +6,7 @@ type Settings struct {
 	Connection Connection
 	Global     Global              `validate:"dive"`
 	Auth       Auth                `validate:"dive"`
-	Resources  map[string]Resource `validate:"dive,keys,mdb-name,endkeys"`
+	Resources  map[string]Resource `validate:"dive,keys,mdb-name,endkeys,dive"`
 }
 
 // Prepare prepares the default values of all the members.

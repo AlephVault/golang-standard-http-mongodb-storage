@@ -37,8 +37,8 @@ type Resource struct {
 	Filter         bson.M
 	ItemProjection bson.D
 	ListProjection bson.D                `validate:"required_iif=Type 1,excluded_if=Type 1"`
-	ItemMethods    map[string]ItemMethod `validate:"dive,keys,method-name,endkeys"`
-	ListMethods    map[string]ListMethod `validate:"required_iif=Type 1,excluded_if=Type 1,dive,keys,method-name,endkeys"`
+	ItemMethods    map[string]ItemMethod `validate:"dive,keys,method-name,endkeys,dive"`
+	ListMethods    map[string]ListMethod `validate:"required_iif=Type 1,excluded_if=Type 1,dive,keys,method-name,endkeys,dive"`
 	ModelType      interface{}           `validate:"required"`
 	Verbs          []ResourceVerb        `validate:"dive,verbs"`
 	SoftDelete     bool
