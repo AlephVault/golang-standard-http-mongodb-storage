@@ -1,7 +1,6 @@
 package validation
 
 import (
-	"errors"
 	"github.com/go-playground/validator/v10"
 	"reflect"
 	"regexp"
@@ -35,6 +34,13 @@ func regexFunction(regex *regexp.Regexp) func(fl validator.FieldLevel) bool {
 func requiredIifValidator(fl validator.FieldLevel) bool {
 	params := strings.Fields(fl.Param()) // Get the parameters and split by space
 
+	switch fl.Field().Kind() {
+	case reflect.Map, reflect.Slice, reflect.Array:
+		// Nothing here
+	default:
+		panic("require_iif can only be applied to lists, slices and maps")
+	}
+
 	if len(params) != 2 {
 		panic("require_iif only allows a parameter like this: SomeIntLikeField someIntLikeValue")
 	}
@@ -46,34 +52,30 @@ func requiredIifValidator(fl validator.FieldLevel) bool {
 	field := rv.FieldByName(fieldName)
 
 	// Make sure field exists and is an integer type
+	var actualFieldValue int = 0
+	var paramValue int = 0
 	if !field.IsValid() {
 		panic("require_iif requires a valid int-like field to be specified")
-	} else if field.Kind() != reflect.Int && field.Kind() != reflect.Int64 &&
-		field.Kind() != reflect.Uint && field.Kind() != reflect.Uint64 {
-		panic("require_iif requires the kind to be [u]int ir [u]int64")
-	}
-
-	// Convert the value and understand a priori.
-	paramValue, err := strconv.Atoi(paramValueStr)
-	if err != nil {
-		if !errors.Is(err, strconv.ErrRange) {
-			panic("require_iif requires the comparison value to be a valid integer number")
-		} else {
+	} else if field.Kind() == reflect.Int || field.Kind() == reflect.Int64 {
+		paramValue, err := strconv.Atoi(paramValueStr)
+		if err != nil || paramValue < 0 {
+			panic("require_iif requires the comparison value to be a valid non-negative integer number")
+		}
+		actualFieldValue = int(field.Int())
+	} else if field.Kind() == reflect.Uint || field.Kind() == reflect.Uint64 {
+		paramValue, err := strconv.ParseUint(paramValueStr, 10, 64)
+		if err != nil {
+			panic("require_iif requires the comparison value to be a valid non-negative integer number")
+		} else if paramValue > (^uint64(0) >> 1) {
 			return true
 		}
+		actualFieldValue = int(field.Uint())
+	} else {
+		panic("require_iif requires a valid int-like field to be specified")
 	}
-
-	// Get the actual field value.
-	actualFieldValue := int(field.Int())
 
 	// Determine the length of the map, slice, or array
-	var length int
-	switch fl.Field().Kind() {
-	case reflect.Map, reflect.Slice, reflect.Array:
-		length = fl.Field().Len()
-	default:
-		return false
-	}
+	var length int = fl.Field().Len()
 
 	if actualFieldValue == paramValue {
 		return length != 0
