@@ -28,6 +28,16 @@ const (
 	LastVerb = DeleteVerb
 )
 
+// ModelTypeFunction is a function that returns the model to use.
+type ModelTypeFunction func() interface{}
+
+// ModelType can be used to instantiate any struct. It should be
+// used in the DSL of a resource.
+func ModelType[T any]() interface{} {
+	var t T
+	return t
+}
+
 // Resource stands for the rules regarding a particular
 // resource (in the end, a collection).
 type Resource struct {
@@ -39,7 +49,7 @@ type Resource struct {
 	ListProjection bson.D                `validate:"required_iif=Type 1,excluded_if=Type 1"`
 	ItemMethods    map[string]ItemMethod `validate:"dive,keys,method-name,endkeys,dive"`
 	ListMethods    map[string]ListMethod `validate:"required_iif=Type 1,excluded_if=Type 1,dive,keys,method-name,endkeys,dive"`
-	ModelType      func() interface{}    `validate:"required"`
+	ModelType      ModelTypeFunction     `validate:"required"`
 	Verbs          []ResourceVerb        `validate:"dive,verbs"`
 	SoftDelete     bool
 	ListMaxResults uint
