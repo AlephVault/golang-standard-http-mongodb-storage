@@ -1,6 +1,7 @@
 package dsl
 
 import (
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,7 +18,7 @@ const (
 // ListMethodHandler is a method that handles a specific collection
 // and some filtering data, related to the whole collection.
 type ListMethodHandler func(
-	client *mongo.Client, resource, method, db, collection string, filter bson.M,
+	context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M,
 )
 
 // ListMethod stands for a method entry which involves a handler and
@@ -31,7 +32,8 @@ type ListMethod struct {
 // ItemMethodHandler is a method that handles a specific collection
 // and some filtering data, now related to an item in particular.
 type ItemMethodHandler func(
-	client *mongo.Client, resource, method, db, collection string, filter bson.M, id primitive.ObjectID,
+	context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M,
+	id primitive.ObjectID,
 )
 
 // ItemMethod stands for a method entry which involves a handler and
