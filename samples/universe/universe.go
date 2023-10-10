@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"standard-http-mongodb-storage/core/dsl"
 	"standard-http-mongodb-storage/core/responses"
+	"standard-http-mongodb-storage/samples/core"
 	"strings"
 )
 
@@ -47,7 +48,7 @@ func SetMotd(context *gin.Context, client *mongo.Client, resource, method, db, c
 	if err := context.ShouldBindJSON(&body); err != nil {
 		responses.UnexpectedFormat(context)
 		return
-	} else if err := sampleValidator.Struct(&body); err != nil {
+	} else if err := core.SampleValidator.Struct(&body); err != nil {
 		responses.InvalidFormat(context, err.(validator.ValidationErrors))
 		return
 	}
