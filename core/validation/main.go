@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	rxMongoName  = regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9_-]+$")
-	rxMethodName = rxMongoName
+	rxMongoName       = regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9_-]+$")
+	rxMethodName      = rxMongoName
+	rxMongoIndexEntry = regexp.MustCompile("^[#~@-]?[a-zA-Z][a-zA-Z0-9_-]*$")
 )
 
 // regexFunction creates a new regex-validator function.
@@ -28,6 +29,7 @@ func regexFunction(regex *regexp.Regexp) func(fl validator.FieldLevel) bool {
 func makeValidator() *validator.Validate {
 	v := validator.New()
 	v.RegisterValidation("mdb-name", regexFunction(rxMongoName))
+	v.RegisterValidation("mdb-index-entry", regexFunction(rxMongoIndexEntry))
 	v.RegisterValidation("method-name", regexFunction(rxMethodName))
 	return v
 }
