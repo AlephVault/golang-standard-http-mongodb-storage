@@ -4,6 +4,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"reflect"
 	"regexp"
+	"standard-http-mongodb-storage/core/dsl"
 )
 
 var (
@@ -31,6 +32,7 @@ func makeValidator() *validator.Validate {
 	v.RegisterValidation("mdb-name", regexFunction(rxMongoName))
 	v.RegisterValidation("mdb-index-entry", regexFunction(rxMongoIndexEntry))
 	v.RegisterValidation("method-name", regexFunction(rxMethodName))
+	v.RegisterValidation("verbs", dsl.ValidateVerbs)
 	return v
 }
 
