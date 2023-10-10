@@ -36,14 +36,14 @@ type Resource struct {
 	Sort           bson.D
 	Filter         bson.M
 	ItemProjection bson.D
-	ListProjection bson.D                `validate:"required_if=Type 0,excluded_if=Type 1"`
-	ItemMethods    map[string]ItemMethod `validate:"dive,keys,method-name,endKeys"`
-	ListMethods    map[string]ListMethod `validate:"required_if=Type 0,excluded_if=Type 1,dive,keys,method-name,endKeys"`
+	ListProjection bson.D                `validate:"required_iif=Type 1,excluded_if=Type 1"`
+	ItemMethods    map[string]ItemMethod `validate:"dive,keys,method-name,endkeys"`
+	ListMethods    map[string]ListMethod `validate:"required_iif=Type 1,excluded_if=Type 1,dive,keys,method-name,endkeys"`
 	ModelType      interface{}           `validate:"required"`
 	Verbs          []ResourceVerb        `validate:"dive,verbs"`
 	SoftDelete     bool
 	ListMaxResults uint
-	Indexes        map[string]Index `validate:"dive,keys,mdb-name,endKeys"`
+	Indexes        map[string]Index `validate:"dive,keys,mdb-name,endkeys"`
 }
 
 // Resources belong to a mapping.
