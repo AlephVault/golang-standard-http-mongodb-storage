@@ -93,7 +93,7 @@ var (
 			Collection: "universe",
 		},
 		SoftDelete: true,
-		ModelType:  Universe{},
+		ModelType:  func() interface{} { return &Universe{} },
 		// ListProjection: bson.D{{"foo", "bar"}},
 		ItemProjection: bson.D{{"caption", 1}, {"motd", 1}},
 		ItemMethods: map[string]dsl.ItemMethod{
