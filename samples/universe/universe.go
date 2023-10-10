@@ -1,4 +1,4 @@
-package main
+package universe
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"standard-http-mongodb-storage/core/dsl"
 	"standard-http-mongodb-storage/core/responses"
 	"strings"
 )
@@ -29,10 +30,10 @@ type SetMotdBody struct {
 	Motd string `validate:"required,gt=0" json:"motd"`
 }
 
-// setMotd changes the current motd of the universe.
-func setMotd(context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M) {
+// SetMotd changes the current motd of the universe.
+func SetMotd(context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M) {
 	defer func() {
-		if v := recover; v != nil {
+		if v := recover(); v != nil {
 			responses.UnexpectedFormat(context)
 		}
 	}()
@@ -63,7 +64,8 @@ func setMotd(context *gin.Context, client *mongo.Client, resource, method, db, c
 	}
 }
 
-func getVersion(context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M) {
+// GetVersion is a handler that returns the current version.
+func GetVersion(context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M) {
 	if result := client.Database(db).Collection(collection).FindOne(context, filter); result != nil && result.Err() == nil {
 		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
 			responses.NotFound(context)
@@ -81,3 +83,27 @@ func getVersion(context *gin.Context, client *mongo.Client, resource, method, db
 		}
 	}
 }
+
+var (
+	UniverseResource = dsl.Resource{
+		Type: dsl.SimpleResource,
+		TableRef: dsl.TableRef{
+			Db:         "mydb",
+			Collection: "universe",
+		},
+		SoftDelete: true,
+		ModelType:  Universe{},
+		// ListProjection: bson.D{{"foo", "bar"}},
+		ItemProjection: bson.D{{"caption", 1}, {"motd", 1}},
+		ItemMethods: map[string]dsl.ItemMethod{
+			"set-motd": {
+				Type:    dsl.Operation,
+				Handler: SetMotd,
+			},
+			"version": {
+				Type:    dsl.View,
+				Handler: GetVersion,
+			},
+		},
+	}
+)
