@@ -2,6 +2,7 @@ package responses
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 )
@@ -102,8 +103,12 @@ func UnexpectedFormat(c *gin.Context) {
 
 // InvalidFormat dumps an "invalid format" message
 // response (400) in the gin context, with the errors
-// that must flow to the user..
-func InvalidFormat(c *gin.Context, errors any) {
+// that must flow to the user.
+func InvalidFormat(c *gin.Context, errors validator.ValidationErrors) {
+	errorMessages := make([]string, len(errors))
+	for index, value := range errors {
+		errorMessages[index] = value.Error()
+	}
 	c.JSON(http.StatusBadRequest, gin.H{
 		"code":   "format:invalid",
 		"errors": errors,
