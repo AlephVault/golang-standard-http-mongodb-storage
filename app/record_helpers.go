@@ -13,32 +13,30 @@ import (
 type CreateOneFunc func(context.Context, interface{}) (primitive.ObjectID, error)
 
 // GetOneFunc stands for a function that gets one element.
-type GetOneFunc func(context.Context, string) (interface{}, error)
+type GetOneFunc func(context.Context, primitive.ObjectID) (interface{}, error)
 
 // DeleteOneFunc stands for a function that deletes an element.
-type DeleteOneFunc func(context.Context, string) (bool, error)
+type DeleteOneFunc func(context.Context, primitive.ObjectID) (bool, error)
 
 // UpdateOneFunc stands for a function that updates a document.
-type UpdateOneFunc func(context.Context, string, bson.M) (bool, error)
+type UpdateOneFunc func(context.Context, primitive.ObjectID, bson.M) (bool, error)
 
 // ReplaceOneFunc stands for a function that replaces a document.
-type ReplaceOneFunc func(context.Context, string, interface{}) (bool, error)
+type ReplaceOneFunc func(context.Context, primitive.ObjectID, interface{}) (bool, error)
 
 // GetManyFunc stands for a function that gets many documents.
 type GetManyFunc func(context.Context, int64, int64) ([]interface{}, error)
 
 // setId sets the id in a filter, if any. It also sets a filter
 // on the _deleted field if softDelete is true.
-func setId(filter bson.M, id string, softDelete bool) (bson.M, error) {
+func setId(filter bson.M, id primitive.ObjectID, softDelete bool) (bson.M, error) {
 	// Set the ID.
 	filter_ := bson.M{}
 	maps.Copy(filter_, filter)
-	if len(id) == 0 {
+	if id.IsZero() {
 		return filter_, nil
-	} else if id_, err := primitive.ObjectIDFromHex(id); err != nil {
-		return nil, err
 	} else {
-		filter_["_id"] = id_
+		filter_["_id"] = id
 		if softDelete {
 			filter_["_deleted"] = bson.M{"$ne": true}
 		}
@@ -69,7 +67,7 @@ func makeGetMany(
 		var filter_ bson.M
 
 		// Set the ID.
-		if filter_, err = setId(filter, "", softDelete); err != nil {
+		if filter_, err = setId(filter, primitive.NilObjectID, softDelete); err != nil {
 			return nil, err
 		}
 
@@ -107,7 +105,7 @@ func makeGetOne(
 	collection *mongo.Collection, make func() interface{}, softDelete bool,
 	filter bson.M, projection interface{}, sort interface{},
 ) GetOneFunc {
-	return func(ctx context.Context, id string) (interface{}, error) {
+	return func(ctx context.Context, id primitive.ObjectID) (interface{}, error) {
 		var err error
 		var filter_ bson.M
 
@@ -140,7 +138,7 @@ func makeGetOne(
 func makeDeleteOne(
 	collection *mongo.Collection, filter bson.M, softDelete bool,
 ) DeleteOneFunc {
-	return func(ctx context.Context, id string) (bool, error) {
+	return func(ctx context.Context, id primitive.ObjectID) (bool, error) {
 		var err error
 		var filter_ bson.M
 
@@ -164,7 +162,7 @@ func makeDeleteOne(
 func makeUpdateOne(
 	collection *mongo.Collection, filter bson.M, softDelete bool,
 ) UpdateOneFunc {
-	return func(ctx context.Context, id string, updates bson.M) (bool, error) {
+	return func(ctx context.Context, id primitive.ObjectID, updates bson.M) (bool, error) {
 		var err error
 		var filter_ bson.M
 
@@ -188,7 +186,7 @@ func makeUpdateOne(
 func makeReplaceOne(
 	collection *mongo.Collection, filter bson.M, softDelete bool,
 ) ReplaceOneFunc {
-	return func(ctx context.Context, id string, replacement interface{}) (bool, error) {
+	return func(ctx context.Context, id primitive.ObjectID, replacement interface{}) (bool, error) {
 		var err error
 		var filter_ bson.M
 
@@ -205,5 +203,29 @@ func makeReplaceOne(
 		} else {
 			return result.ModifiedCount > 0, nil
 		}
+	}
+}
+
+// simulatedUpdate simulates an update (it actually inserts the object and updates
+// it in a new, temporary, collection to anticipate how would an updated document
+// becomes, to then be validated).
+func simulatedUpdate(
+	ctx context.Context, id primitive.ObjectID, collection *mongo.Collection, make func() interface{}, entity, updates interface{},
+) (interface{}, error) {
+	filter := bson.M{"_id": id}
+	if _, err := collection.ReplaceOne(
+		ctx, filter, entity, options.Replace().SetUpsert(true),
+	); err != nil {
+		return nil, err
+	} else if _, err := collection.UpdateOne(ctx, filter, bson.M{"$set": updates}); err != nil {
+		return nil, err
+	} else if result := collection.FindOne(ctx, filter, options.FindOne().SetReturnKey(true).SetShowRecordID(true)); result.Err() != nil {
+		return nil, err
+	} else {
+		obj := make()
+		if err := result.Decode(&obj); err != nil {
+			return nil, err
+		}
+		return obj, nil
 	}
 }
