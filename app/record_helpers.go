@@ -7,7 +7,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"maps"
-	"reflect"
 )
 
 // CreateOneFunc stands for a function that creates one element.
@@ -62,11 +61,9 @@ func makeCreateOne(
 
 // makeGetMany
 func makeGetMany(
-	collection *mongo.Collection, template interface{}, softDelete bool,
+	collection *mongo.Collection, make func() interface{}, softDelete bool,
 	filter bson.M, projection interface{}, sort interface{},
 ) GetManyFunc {
-	// The template WILL be of a struct type.
-	// NOT a null value. NOT a pointer to a struct.
 	return func(ctx context.Context, page int64, pageSize int64) ([]interface{}, error) {
 		var err error
 		var filter_ bson.M
@@ -89,11 +86,12 @@ func makeGetMany(
 		); err != nil {
 			return nil, err
 		} else {
-			defer cursor.Close(ctx)
-			type_ := reflect.TypeOf(template)
+			defer func(cursor *mongo.Cursor, ctx context.Context) {
+				_ = cursor.Close(ctx)
+			}(cursor, ctx)
 			var elements []interface{}
 			for cursor.Next(ctx) {
-				element := reflect.New(type_)
+				element := make()
 				if err := cursor.Decode(&element); err != nil {
 					return nil, err
 				}
@@ -106,12 +104,9 @@ func makeGetMany(
 
 // makeGetOne makes a function that returns a single element. Returns a new element.
 func makeGetOne(
-	collection *mongo.Collection, template interface{}, softDelete bool,
+	collection *mongo.Collection, make func() interface{}, softDelete bool,
 	filter bson.M, projection interface{}, sort interface{},
 ) GetOneFunc {
-	// The template WILL be of a struct type.
-	// NOT a null value. NOT a pointer to a struct.
-
 	return func(ctx context.Context, id string) (interface{}, error) {
 		var err error
 		var filter_ bson.M
@@ -132,7 +127,7 @@ func makeGetOne(
 		}
 
 		// Decode the result.
-		obj := reflect.New(reflect.TypeOf(template))
+		obj := make()
 		if err := result.Decode(&obj); err != nil {
 			return nil, err
 		} else {
