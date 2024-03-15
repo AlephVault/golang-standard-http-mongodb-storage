@@ -62,7 +62,7 @@ func makeCreateOne(
 
 // makeGetMany
 func makeGetMany(
-	client *mongo.Client, template interface{}, resDB, resCollection string, softDelete bool,
+	collection *mongo.Collection, template interface{}, softDelete bool,
 	filter bson.M, projection interface{}, sort interface{},
 ) GetManyFunc {
 	// The template WILL be of a struct type.
@@ -77,9 +77,15 @@ func makeGetMany(
 		}
 
 		// Try getting many elements.
-		if cursor, err := client.Database(resDB).Collection(resCollection).Find(
-			ctx, filter_,
-			options.Find().SetProjection(projection).SetReturnKey(true).SetShowRecordID(true).SetSort(sort),
+		options_ := options.Find().SetProjection(projection).SetReturnKey(true).SetShowRecordID(true).SetSort(sort)
+		if pageSize > 0 {
+			options_ = options_.SetLimit(pageSize)
+			if page > 0 {
+				options_ = options_.SetSkip(page * pageSize)
+			}
+		}
+		if cursor, err := collection.Find(
+			ctx, filter_, options_,
 		); err != nil {
 			return nil, err
 		} else {
@@ -100,7 +106,7 @@ func makeGetMany(
 
 // makeGetOne makes a function that returns a single element. Returns a new element.
 func makeGetOne(
-	client *mongo.Client, template interface{}, resDB, resCollection string, softDelete bool,
+	collection *mongo.Collection, template interface{}, softDelete bool,
 	filter bson.M, projection interface{}, sort interface{},
 ) GetOneFunc {
 	// The template WILL be of a struct type.
@@ -116,7 +122,7 @@ func makeGetOne(
 		}
 
 		// Try getting an element.
-		result := client.Database(resDB).Collection(resCollection).FindOne(
+		result := collection.FindOne(
 			ctx, filter_,
 			options.FindOne().SetProjection(projection).SetReturnKey(true).SetShowRecordID(true).SetSort(sort),
 		)
@@ -137,7 +143,7 @@ func makeGetOne(
 
 // makeDeleteOne makes a function that deletes a single element.
 func makeDeleteOne(
-	client *mongo.Client, resDB, resCollection string, filter bson.M, softDelete bool,
+	collection *mongo.Collection, filter bson.M, softDelete bool,
 ) DeleteOneFunc {
 	return func(ctx context.Context, id string) (bool, error) {
 		var err error
@@ -149,7 +155,7 @@ func makeDeleteOne(
 		}
 
 		// Try deleting an element.
-		if result, err := client.Database(resDB).Collection(resCollection).DeleteOne(
+		if result, err := collection.DeleteOne(
 			ctx, filter_,
 		); err != nil {
 			return false, err
@@ -161,19 +167,19 @@ func makeDeleteOne(
 
 // makeUpdateOne makes a function that patches a document.
 func makeUpdateOne(
-	client *mongo.Client, resDB, resCollection string, filter bson.M, softDelete bool,
+	collection *mongo.Collection, filter bson.M, softDelete bool,
 ) UpdateOneFunc {
 	return func(ctx context.Context, id string, updates bson.M) (bool, error) {
 		var err error
 		var filter_ bson.M
 
 		// Set the ID.
-		if filter_, err = setId(filter_, id, softDelete); err != nil {
+		if filter_, err = setId(filter, id, softDelete); err != nil {
 			return false, err
 		}
 
 		// Try updating an element.
-		if result, err := client.Database(resDB).Collection(resCollection).UpdateOne(
+		if result, err := collection.UpdateOne(
 			ctx, filter_, bson.M{"$set": updates},
 		); err != nil {
 			return false, err
@@ -185,7 +191,7 @@ func makeUpdateOne(
 
 // makeReplaceOne makes a function that replaces a document.
 func makeReplaceOne(
-	client *mongo.Client, resDB, resCollection string, filter bson.M, softDelete bool,
+	collection *mongo.Collection, filter bson.M, softDelete bool,
 ) ReplaceOneFunc {
 	return func(ctx context.Context, id string, replacement interface{}) (bool, error) {
 		var err error
@@ -197,7 +203,7 @@ func makeReplaceOne(
 		}
 
 		// Try replacing an element.
-		if result, err := client.Database(resDB).Collection(resCollection).ReplaceOne(
+		if result, err := collection.ReplaceOne(
 			ctx, filter_, replacement,
 		); err != nil {
 			return false, err
