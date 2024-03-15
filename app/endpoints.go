@@ -6,16 +6,23 @@ import (
 	"standard-http-mongodb-storage/core/dsl"
 )
 
-func registerEndpoints(client *mongo.Client, router *gin.Engine, key string, resource *dsl.Resource) {
+func registerEndpoints(
+	client *mongo.Client, router *gin.Engine, key string,
+	resource *dsl.Resource, auth *dsl.Auth,
+) {
 	if resource.Type == dsl.SimpleResource {
-		registerSimpleResourceEndpoints(client, router, key, resource)
+		registerSimpleResourceEndpoints(client, router, key, resource, auth)
 	} else {
-		registerListResourceEndpoints(client, router, key, resource)
+		registerListResourceEndpoints(client, router, key, resource, auth)
 	}
 }
 
-func registerSimpleResourceEndpoints(client *mongo.Client, router *gin.Engine, key string, resource *dsl.Resource) {
+func registerSimpleResourceEndpoints(
+	client *mongo.Client, router *gin.Engine, key string,
+	resource *dsl.Resource, auth *dsl.Auth,
+) {
 	// tmpUpdatesCollection := client.Database("~tmp").Collection("updates")
+	// authCollection := client.Database(auth.Db).Collection(auth.Collection)
 
 	router.GET("/"+key, func(context *gin.Context) {
 		// TODO simple resource GET, 404, or some error.
@@ -40,8 +47,12 @@ func registerSimpleResourceEndpoints(client *mongo.Client, router *gin.Engine, k
 	})
 }
 
-func registerListResourceEndpoints(client *mongo.Client, router *gin.Engine, key string, resource *dsl.Resource) {
+func registerListResourceEndpoints(
+	client *mongo.Client, router *gin.Engine, key string,
+	resource *dsl.Resource, auth *dsl.Auth,
+) {
 	// tmpUpdatesCollection := client.Database("~tmp").Collection("updates")
+	// authCollection := client.Database(auth.Db).Collection(auth.Collection)
 
 	router.GET("/"+key, func(context *gin.Context) {
 		// TODO multiple resource GET, or some error.
