@@ -13,6 +13,21 @@ import (
 // CreateOneFunc stands for a function that creates one element.
 type CreateOneFunc func(context.Context, interface{}) (primitive.ObjectID, error)
 
+// GetOneFunc stands for a function that gets one element.
+type GetOneFunc func(context.Context, string) (interface{}, error)
+
+// DeleteOneFunc stands for a function that deletes an element.
+type DeleteOneFunc func(context.Context, string) (bool, error)
+
+// UpdateOneFunc stands for a function that updates a document.
+type UpdateOneFunc func(context.Context, string, bson.M) (bool, error)
+
+// ReplaceOneFunc stands for a function that replaces a document.
+type ReplaceOneFunc func(context.Context, string, interface{}) (bool, error)
+
+// GetManyFunc stands for a function that gets many documents.
+type GetManyFunc func(context.Context, int64, int64) ([]interface{}, error)
+
 // setId sets the id in a filter, if any. It also sets a filter
 // on the _deleted field if softDelete is true.
 func setId(filter bson.M, id string, softDelete bool) (bson.M, error) {
@@ -35,7 +50,7 @@ func setId(filter bson.M, id string, softDelete bool) (bson.M, error) {
 // makeCreateOne creates a document.
 func makeCreateOne(
 	client *mongo.Client, resDB, resCollection string,
-) func(context.Context, interface{}) (primitive.ObjectID, error) {
+) CreateOneFunc {
 	return func(ctx context.Context, content interface{}) (primitive.ObjectID, error) {
 		if result, err := client.Database(resDB).Collection(resCollection).InsertOne(ctx, content); err != nil {
 			return primitive.ObjectID{}, err
@@ -45,11 +60,49 @@ func makeCreateOne(
 	}
 }
 
-// makeGetOne returns a single element. Returns a POINTER to a new element.
+// makeGetMany
+func makeGetMany(
+	client *mongo.Client, template interface{}, resDB, resCollection string, softDelete bool,
+	filter bson.M, projection interface{}, sort interface{},
+) GetManyFunc {
+	// The template WILL be of a struct type.
+	// NOT a null value. NOT a pointer to a struct.
+	return func(ctx context.Context, page int64, pageSize int64) ([]interface{}, error) {
+		var err error
+		var filter_ bson.M
+
+		// Set the ID.
+		if filter_, err = setId(filter, "", softDelete); err != nil {
+			return nil, err
+		}
+
+		// Try getting many elements.
+		if cursor, err := client.Database(resDB).Collection(resCollection).Find(
+			ctx, filter_,
+			options.Find().SetProjection(projection).SetReturnKey(true).SetShowRecordID(true).SetSort(sort),
+		); err != nil {
+			return nil, err
+		} else {
+			defer cursor.Close(ctx)
+			type_ := reflect.TypeOf(template)
+			var elements []interface{}
+			for cursor.Next(ctx) {
+				element := reflect.New(type_)
+				if err := cursor.Decode(&element); err != nil {
+					return nil, err
+				}
+				elements = append(elements, cursor)
+			}
+			return elements, nil
+		}
+	}
+}
+
+// makeGetOne makes a function that returns a single element. Returns a new element.
 func makeGetOne(
 	client *mongo.Client, template interface{}, resDB, resCollection string, softDelete bool,
 	filter bson.M, projection interface{}, sort interface{},
-) func(context.Context, string) (interface{}, error) {
+) GetOneFunc {
 	// The template WILL be of a struct type.
 	// NOT a null value. NOT a pointer to a struct.
 
@@ -67,21 +120,25 @@ func makeGetOne(
 			ctx, filter_,
 			options.FindOne().SetProjection(projection).SetReturnKey(true).SetShowRecordID(true).SetSort(sort),
 		)
+		err = result.Err()
+		if err != nil {
+			return nil, err
+		}
 
 		// Decode the result.
 		obj := reflect.New(reflect.TypeOf(template))
 		if err := result.Decode(&obj); err != nil {
 			return nil, err
 		} else {
-			return &obj, nil
+			return obj, nil
 		}
 	}
 }
 
-// makeDeleteOne deletes a single element.
+// makeDeleteOne makes a function that deletes a single element.
 func makeDeleteOne(
 	client *mongo.Client, resDB, resCollection string, filter bson.M, softDelete bool,
-) func(context.Context, string) (bool, error) {
+) DeleteOneFunc {
 	return func(ctx context.Context, id string) (bool, error) {
 		var err error
 		var filter_ bson.M
@@ -102,10 +159,10 @@ func makeDeleteOne(
 	}
 }
 
-// makeUpdateOne patches a document.
+// makeUpdateOne makes a function that patches a document.
 func makeUpdateOne(
 	client *mongo.Client, resDB, resCollection string, filter bson.M, softDelete bool,
-) func(context.Context, string, bson.M) (bool, error) {
+) UpdateOneFunc {
 	return func(ctx context.Context, id string, updates bson.M) (bool, error) {
 		var err error
 		var filter_ bson.M
@@ -126,10 +183,10 @@ func makeUpdateOne(
 	}
 }
 
-// makeReplaceOne replaces a document.
+// makeReplaceOne makes a function that replaces a document.
 func makeReplaceOne(
 	client *mongo.Client, resDB, resCollection string, filter bson.M, softDelete bool,
-) func(context.Context, string, interface{}) (bool, error) {
+) ReplaceOneFunc {
 	return func(ctx context.Context, id string, replacement interface{}) (bool, error) {
 		var err error
 		var filter_ bson.M
