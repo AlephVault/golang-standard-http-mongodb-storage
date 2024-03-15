@@ -72,7 +72,7 @@ func makeGetMany(
 		}
 
 		// Try getting many elements.
-		options_ := options.Find().SetProjection(projection).SetReturnKey(true).SetShowRecordID(true).SetSort(sort)
+		options_ := options.Find().SetProjection(projection).SetSort(sort)
 		if pageSize > 0 {
 			options_ = options_.SetLimit(pageSize)
 			if page > 0 {
@@ -117,7 +117,7 @@ func makeGetOne(
 		// Try getting an element.
 		result := collection.FindOne(
 			ctx, filter_,
-			options.FindOne().SetProjection(projection).SetReturnKey(true).SetShowRecordID(true).SetSort(sort),
+			options.FindOne().SetProjection(projection).SetSort(sort),
 		)
 		err = result.Err()
 		if err != nil {
@@ -219,7 +219,7 @@ func simulatedUpdate(
 		return nil, err
 	} else if _, err := collection.UpdateOne(ctx, filter, bson.M{"$set": updates}); err != nil {
 		return nil, err
-	} else if result := collection.FindOne(ctx, filter, options.FindOne().SetReturnKey(true).SetShowRecordID(true)); result.Err() != nil {
+	} else if result := collection.FindOne(ctx, filter); result.Err() != nil {
 		return nil, err
 	} else {
 		obj := make()
