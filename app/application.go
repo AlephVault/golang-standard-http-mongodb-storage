@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -13,4 +14,10 @@ type Application struct {
 	router *gin.Engine
 }
 
-// TODO implement this later.
+// Run runs the actual web server.
+func (application *Application) Run(addr ...string) error {
+	if application.router != nil {
+		return errors.New("the router is null")
+	}
+	return application.router.Run(addr...)
+}
