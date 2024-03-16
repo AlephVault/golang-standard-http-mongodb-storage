@@ -2,20 +2,35 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log/slog"
+	"os"
 	"standard-http-mongodb-storage/core/dsl"
 	"standard-http-mongodb-storage/core/validation"
 )
+
+type Panicked struct {
+	With any
+}
+
+func (panicked *Panicked) Error() string {
+	return fmt.Sprintf("Panicked with: %v", panicked.With)
+}
 
 // MakeServer is used to create a server. The connection
 // is created and established, but the server is not run
 // immediately.
 func MakeServer(settings *dsl.Settings, setupValidator func(*validator.Validate)) (app *Application, err error) {
+	defer func() {
+		if v := recover(); v != nil {
+			app, err = nil, &Panicked{v}
+		}
+	}()
 	settings.Prepare()
 
 	// Attempt a connection and get the client. Also, prepare
@@ -37,13 +52,17 @@ func MakeServer(settings *dsl.Settings, setupValidator func(*validator.Validate)
 	}
 
 	// Configure slog logging level.
+	level := slog.LevelInfo
 	if settings.Debug {
-		slog.SetLogLoggerLevel(slog.LevelDebug)
+		level = slog.LevelDebug
 	}
+	logger := slog.NewLogLogger(slog.NewTextHandler(os.Stdout, nil), level)
 
 	// Configure the endpoints.
 	router := gin.Default()
-	registerEndpoints(router)
+	for resourceKey, resource := range settings.Resources {
+		registerEndpoints(client, router, resourceKey, &resource, &settings.Auth, logger)
+	}
 
 	// Create the final application object.
 	app = &Application{
@@ -62,25 +81,9 @@ func prepareIndices(client *mongo.Client, settings *dsl.Settings) (err error) {
 		bg, mongo.IndexModel{
 			Keys: bson.M{"api-key": 1}, // 1=Ascending.
 			Options: &options.IndexOptions{
-				ExpireAfterSeconds:      nil,
-				Name:                    &name,
-				Sparse:                  &sparse,
-				StorageEngine:           nil,
-				Unique:                  &unique,
-				Version:                 nil,
-				DefaultLanguage:         nil,
-				LanguageOverride:        nil,
-				TextVersion:             nil,
-				Weights:                 nil,
-				SphereVersion:           nil,
-				Bits:                    nil,
-				Max:                     nil,
-				Min:                     nil,
-				BucketSize:              nil,
-				PartialFilterExpression: nil,
-				Collation:               nil,
-				WildcardProjection:      nil,
-				Hidden:                  nil,
+				Name:   &name,
+				Sparse: &sparse,
+				Unique: &unique,
 			},
 		},
 	); err != nil {
@@ -93,7 +96,7 @@ func prepareIndices(client *mongo.Client, settings *dsl.Settings) (err error) {
 			fields := index.Fields
 			fieldsMap := bson.M{}
 			for _, field := range fields {
-				var type_ interface{}
+				var type_ any
 				switch field[0] {
 				case '-':
 					type_ = -1
@@ -104,33 +107,17 @@ func prepareIndices(client *mongo.Client, settings *dsl.Settings) (err error) {
 				case '~':
 					type_ = "text"
 				default:
-					type_ = "ascending"
+					type_ = 1
 				}
 				fieldsMap[field] = type_
 			}
 			if _, err = client.Database(resource.Db).Collection(resource.Collection).Indexes().CreateOne(
 				bg, mongo.IndexModel{
-					Keys: bson.M{"api-key": 1}, // 1=Ascending.
+					Keys: fieldsMap,
 					Options: &options.IndexOptions{
-						ExpireAfterSeconds:      nil,
-						Name:                    &name,
-						Sparse:                  &sparse,
-						StorageEngine:           nil,
-						Unique:                  &unique,
-						Version:                 nil,
-						DefaultLanguage:         nil,
-						LanguageOverride:        nil,
-						TextVersion:             nil,
-						Weights:                 nil,
-						SphereVersion:           nil,
-						Bits:                    nil,
-						Max:                     nil,
-						Min:                     nil,
-						BucketSize:              nil,
-						PartialFilterExpression: nil,
-						Collation:               nil,
-						WildcardProjection:      nil,
-						Hidden:                  nil,
+						Name:   &name,
+						Sparse: &sparse,
+						Unique: &unique,
 					},
 				},
 			); err != nil {

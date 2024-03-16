@@ -12,7 +12,7 @@ import (
 )
 
 // checkPermission checks whether a permission is in the list of permissions.
-func checkPermission(permission string, existingPermissions []interface{}) bool {
+func checkPermission(permission string, existingPermissions []any) bool {
 	for _, existingPermission := range existingPermissions {
 		if perm, ok := existingPermission.(string); ok && (perm == "*" || perm == permission) {
 			return true
@@ -62,13 +62,13 @@ func authenticate(ctx *gin.Context, collection *mongo.Collection, key, permissio
 
 	hasPermission := false
 	if globalPermissions, ok := tokenRecord.Permissions["*"]; ok {
-		if globalPermissionsArray, ok := globalPermissions.([]interface{}); ok {
+		if globalPermissionsArray, ok := globalPermissions.([]any); ok {
 			hasPermission = checkPermission(permission, globalPermissionsArray)
 		}
 	}
 	if !hasPermission {
 		if localPermissions, ok := tokenRecord.Permissions[key]; ok {
-			if localPermissionsArray, ok := localPermissions.([]interface{}); ok {
+			if localPermissionsArray, ok := localPermissions.([]any); ok {
 				hasPermission = checkPermission(permission, localPermissionsArray)
 			}
 		}
