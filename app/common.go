@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"standard-http-mongodb-storage/core/auth"
 	"standard-http-mongodb-storage/core/responses"
@@ -18,6 +19,19 @@ func checkPermission(permission string, existingPermissions []interface{}) bool 
 		}
 	}
 	return false
+}
+
+// checkId ensures the :id is valid.
+func checkId(ctx *gin.Context, raiseNotFoundOnError bool) (primitive.ObjectID, bool) {
+	idParam := ctx.Param("id")
+	if id, err := primitive.ObjectIDFromHex(idParam); err != nil {
+		if raiseNotFoundOnError {
+			responses.NotFound(ctx)
+		}
+		return primitive.NilObjectID, false
+	} else {
+		return id, true
+	}
 }
 
 // authenticate performs an authentication and permissions check.
