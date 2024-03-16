@@ -15,7 +15,7 @@ import (
 
 // simpleCreate is the full handler of the POST endpoint for simple resources.
 func simpleCreate(
-	ctx *gin.Context, createOne CreateOneFunc, validatorMaker func() *validator.Validate,
+	ctx *gin.Context, createOne CreateOneFunc, make_ func() any, validatorMaker func() *validator.Validate,
 	logger *slog.Logger,
 ) {
 	// TODO.
@@ -39,7 +39,7 @@ func simpleDelete(
 
 // simpleUpdate is the full handler of the PATCH endpoint for simple resources.
 func simpleUpdate(
-	ctx *gin.Context, updateOne UpdateOneFunc, simulatedUpdate SimulatedUpdateFunc,
+	ctx *gin.Context, updateOne UpdateOneFunc, makeMap func() any, simulatedUpdate SimulatedUpdateFunc,
 	validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
 	// TODO.
@@ -47,7 +47,7 @@ func simpleUpdate(
 
 // simpleReplace is the full handler of the PUT endpoint for simple resources.
 func simpleReplace(
-	ctx *gin.Context, replaceOne ReplaceOneFunc, validatorMaker func() *validator.Validate,
+	ctx *gin.Context, replaceOne ReplaceOneFunc, make_ func() any, validatorMaker func() *validator.Validate,
 	logger *slog.Logger,
 ) {
 	// TODO.
@@ -55,7 +55,7 @@ func simpleReplace(
 
 // listCreate is the full handler of the POST endpoint for list resources.
 func listCreate(
-	ctx *gin.Context, createOne CreateOneFunc, validatorMaker func() *validator.Validate,
+	ctx *gin.Context, createOne CreateOneFunc, make_ func() any, validatorMaker func() *validator.Validate,
 	logger *slog.Logger,
 ) {
 	// TODO.
@@ -79,15 +79,15 @@ func listItemGet(
 
 // listItemUpdate is the full handler of the PATCH endpoint for the list item resources.
 func listItemUpdate(
-	ctx *gin.Context, updateOne UpdateOneFunc, id primitive.ObjectID, simulatedUpdate SimulatedUpdateFunc,
-	validatorMaker func() *validator.Validate, logger *slog.Logger,
+	ctx *gin.Context, updateOne UpdateOneFunc, makeMap func() any, id primitive.ObjectID,
+	simulatedUpdate SimulatedUpdateFunc, validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
 	// TODO.
 }
 
 // listItemReplace is the full handler of the PUT endpoint for the list item resources.
 func listItemReplace(
-	ctx *gin.Context, replaceOne ReplaceOneFunc, id primitive.ObjectID,
+	ctx *gin.Context, replaceOne ReplaceOneFunc, make_ func() any, id primitive.ObjectID,
 	validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
 	// TODO.

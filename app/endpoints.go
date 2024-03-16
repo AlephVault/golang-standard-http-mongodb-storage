@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log/slog"
 	"standard-http-mongodb-storage/core/dsl"
@@ -36,6 +37,7 @@ func registerSimpleResourceEndpoints(
 	methods := resource.Methods
 
 	make_ := resource.ModelType
+	makeMap := func() any { return make(bson.M) }
 
 	createOne := makeCreateOne(collection)
 	getOne := makeGetOne(collection, make_, softDelete, filter, projection, sort)
@@ -58,7 +60,7 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				simpleCreate(context, createOne, validatorMaker, logger)
+				simpleCreate(context, createOne, make_, validatorMaker, logger)
 			})
 		case dsl.ReadVerb:
 			router.GET("/"+key, func(context *gin.Context) {
@@ -72,14 +74,14 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				simpleUpdate(context, updateOne, simulatedUpdate, validatorMaker, logger)
+				simpleUpdate(context, updateOne, makeMap, simulatedUpdate, validatorMaker, logger)
 			})
 		case dsl.ReplaceVerb:
 			router.PUT("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				simpleReplace(context, replaceOne, validatorMaker, logger)
+				simpleReplace(context, replaceOne, make_, validatorMaker, logger)
 			})
 		case dsl.DeleteVerb:
 			router.DELETE("/"+key, func(context *gin.Context) {
@@ -130,6 +132,7 @@ func registerListResourceEndpoints(
 	itemMethods := resource.ItemMethods
 
 	make_ := resource.ModelType
+	makeMap := func() any { return make(bson.M) }
 
 	createOne := makeCreateOne(collection)
 	getMany := makeGetMany(collection, make_, softDelete, filter, projection, sort)
@@ -150,14 +153,14 @@ func registerListResourceEndpoints(
 
 	for _, verb := range verbs {
 		switch verb {
-		case dsl.ListVerb:
+		case dsl.CreateVerb:
 			router.GET("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "read") {
 					return
 				}
-				listCreate(context, createOne, validatorMaker, logger)
+				listCreate(context, createOne, make_, validatorMaker, logger)
 			})
-		case dsl.CreateVerb:
+		case dsl.ListVerb:
 			router.POST("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "write") {
 					return
@@ -188,7 +191,7 @@ func registerListResourceEndpoints(
 				if id, ok := checkId(context, "id", true); !ok {
 					responses.NotFound(context)
 				} else {
-					listItemUpdate(context, updateOne, id, simulatedUpdate, validatorMaker, logger)
+					listItemUpdate(context, updateOne, makeMap, id, simulatedUpdate, validatorMaker, logger)
 				}
 			})
 		case dsl.ReplaceVerb:
@@ -199,7 +202,7 @@ func registerListResourceEndpoints(
 				if id, ok := checkId(context, "id", true); !ok {
 					responses.NotFound(context)
 				} else {
-					listItemReplace(context, replaceOne, id, validatorMaker, logger)
+					listItemReplace(context, replaceOne, make_, id, validatorMaker, logger)
 				}
 			})
 		case dsl.DeleteVerb:
