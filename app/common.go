@@ -22,8 +22,8 @@ func checkPermission(permission string, existingPermissions []interface{}) bool 
 }
 
 // checkId ensures the :id is valid.
-func checkId(ctx *gin.Context, raiseNotFoundOnError bool) (primitive.ObjectID, bool) {
-	idParam := ctx.Param("id")
+func checkId(ctx *gin.Context, arg string, raiseNotFoundOnError bool) (primitive.ObjectID, bool) {
+	idParam := ctx.Param(arg)
 	if id, err := primitive.ObjectIDFromHex(idParam); err != nil {
 		if raiseNotFoundOnError {
 			responses.NotFound(ctx)
