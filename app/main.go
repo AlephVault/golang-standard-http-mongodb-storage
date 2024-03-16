@@ -47,24 +47,26 @@ func MakeServer(
 
 	// Make the validator to use and validate the settings.
 	settingsValidator := validation.Validator()
-	if setupValidator != nil {
-		setupValidator(settingsValidator)
-	}
 	if err = settingsValidator.Struct(settings); err != nil {
 		return
 	}
 
-	// Configure slog logging level.
-	level := slog.LevelInfo
-	if settings.Debug {
-		level = slog.LevelDebug
+	// Make the validator to use and validate the resources.
+	resourcesValidator := validation.Validator()
+	if setupValidator != nil {
+		setupValidator(resourcesValidator)
 	}
-	logger := slog.NewLogLogger(slog.NewTextHandler(os.Stdout, nil), level)
+
+	// Configure slog logging level.
+	if settings.Debug {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	}
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	// Configure the endpoints.
 	router := gin.Default()
 	for resourceKey, resource := range settings.Resources {
-		registerEndpoints(client, router, resourceKey, &resource, &settings.Auth, logger)
+		registerEndpoints(client, router, resourceKey, &resource, &settings.Auth, resourcesValidator, logger)
 	}
 
 	// Create the final application object.
