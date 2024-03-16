@@ -25,7 +25,10 @@ func (panicked *Panicked) Error() string {
 // MakeServer is used to create a server. The connection
 // is created and established, but the server is not run
 // immediately.
-func MakeServer(settings *dsl.Settings, setupValidator func(*validator.Validate)) (app *Application, err error) {
+func MakeServer(
+	settings *dsl.Settings, setupValidator func(*validator.Validate),
+	setup func(*mongo.Client, *dsl.Settings),
+) (app *Application, err error) {
 	defer func() {
 		if v := recover(); v != nil {
 			app, err = nil, &Panicked{v}
@@ -68,6 +71,12 @@ func MakeServer(settings *dsl.Settings, setupValidator func(*validator.Validate)
 	app = &Application{
 		router: router,
 	}
+
+	// Make a setup, using the client and the settings.
+	if setup != nil {
+		setup(client, settings)
+	}
+
 	return
 }
 
