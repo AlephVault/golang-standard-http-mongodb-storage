@@ -46,27 +46,16 @@ func authenticate(ctx *gin.Context, collection *mongo.Collection, key, permissio
 		return false
 	}
 
-	effectivePermission := ""
-	if permission == "method" {
-		if ctx.Request.Method == "GET" {
-			effectivePermission = "read"
-		} else {
-			effectivePermission = "write"
-		}
-	} else {
-		effectivePermission = "permission"
-	}
-
 	hasPermission := false
 	if globalPermissions, ok := tokenRecord.Permissions["*"]; ok {
 		if globalPermissionsArray, ok := globalPermissions.([]interface{}); ok {
-			hasPermission = checkPermission(effectivePermission, globalPermissionsArray)
+			hasPermission = checkPermission(permission, globalPermissionsArray)
 		}
 	}
 	if !hasPermission {
 		if localPermissions, ok := tokenRecord.Permissions[key]; ok {
 			if localPermissionsArray, ok := localPermissions.([]interface{}); ok {
-				hasPermission = checkPermission(effectivePermission, localPermissionsArray)
+				hasPermission = checkPermission(permission, localPermissionsArray)
 			}
 		}
 	}
