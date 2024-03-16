@@ -98,9 +98,12 @@ func MakeServer(
 	}
 
 	// Make the validator to use and validate the resources.
-	resourcesValidator := validation.Validator()
-	if setupValidator != nil {
-		setupValidator(resourcesValidator)
+	resourcesValidatorMaker := func() *validator.Validate {
+		resourcesValidator := validation.Validator()
+		if setupValidator != nil {
+			setupValidator(resourcesValidator)
+		}
+		return resourcesValidator
 	}
 
 	// Configure slog logging level.
@@ -121,7 +124,7 @@ func MakeServer(
 
 	// Configure the endpoints.
 	for resourceKey, resource := range settings.Resources {
-		registerEndpoints(client, router, resourceKey, &resource, &settings.Auth, resourcesValidator, logger)
+		registerEndpoints(client, router, resourceKey, &resource, &settings.Auth, resourcesValidatorMaker, logger)
 	}
 
 	// Create the final application object.

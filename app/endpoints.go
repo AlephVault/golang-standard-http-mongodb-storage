@@ -11,19 +11,19 @@ import (
 
 func registerEndpoints(
 	client *mongo.Client, router *gin.Engine, key string,
-	resource *dsl.Resource, auth *dsl.Auth, validator *validator.Validate,
+	resource *dsl.Resource, auth *dsl.Auth, resourcesValidatorMaker func() *validator.Validate,
 	logger *slog.Logger,
 ) {
 	if resource.Type == dsl.SimpleResource {
-		registerSimpleResourceEndpoints(client, router, key, resource, auth, validator, logger)
+		registerSimpleResourceEndpoints(client, router, key, resource, auth, resourcesValidatorMaker, logger)
 	} else {
-		registerListResourceEndpoints(client, router, key, resource, auth, validator, logger)
+		registerListResourceEndpoints(client, router, key, resource, auth, resourcesValidatorMaker, logger)
 	}
 }
 
 func registerSimpleResourceEndpoints(
 	client *mongo.Client, router *gin.Engine, key string,
-	resource *dsl.Resource, auth *dsl.Auth, validator *validator.Validate,
+	resource *dsl.Resource, auth *dsl.Auth, validatorMaker func() *validator.Validate,
 	logger *slog.Logger,
 ) {
 	tmpUpdatesCollection := client.Database("~tmp").Collection("updates")
@@ -58,35 +58,35 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				simpleCreate(context, createOne, validator, logger)
+				simpleCreate(context, createOne, validatorMaker, logger)
 			})
 		case dsl.ReadVerb:
 			router.GET("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "read") {
 					return
 				}
-				simpleGet(context, getOne, validator, logger)
+				simpleGet(context, getOne, validatorMaker, logger)
 			})
 		case dsl.UpdateVerb:
 			router.PATCH("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				simpleUpdate(context, updateOne, simulatedUpdate, validator, logger)
+				simpleUpdate(context, updateOne, simulatedUpdate, validatorMaker, logger)
 			})
 		case dsl.ReplaceVerb:
 			router.PUT("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				simpleReplace(context, replaceOne, validator, logger)
+				simpleReplace(context, replaceOne, validatorMaker, logger)
 			})
 		case dsl.DeleteVerb:
 			router.DELETE("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "delete") {
 					return
 				}
-				simpleDelete(context, deleteOne, validator, logger)
+				simpleDelete(context, deleteOne, validatorMaker, logger)
 			})
 		default:
 			slog.Info("Ignoring an unknown verb", "verb", verb)
@@ -99,7 +99,7 @@ func registerSimpleResourceEndpoints(
 		}
 		resourceMethod(
 			context, collection, filter, key, dsl.View, context.Param("method"), methods, client,
-			validator, logger,
+			validatorMaker, logger,
 		)
 	})
 	router.POST("/"+key+"/:method", func(context *gin.Context) {
@@ -108,14 +108,14 @@ func registerSimpleResourceEndpoints(
 		}
 		resourceMethod(
 			context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
-			validator, logger,
+			validatorMaker, logger,
 		)
 	})
 }
 
 func registerListResourceEndpoints(
 	client *mongo.Client, router *gin.Engine, key string,
-	resource *dsl.Resource, auth *dsl.Auth, validator *validator.Validate,
+	resource *dsl.Resource, auth *dsl.Auth, validatorMaker func() *validator.Validate,
 	logger *slog.Logger,
 ) {
 	tmpUpdatesCollection := client.Database("~tmp").Collection("updates")
@@ -155,14 +155,14 @@ func registerListResourceEndpoints(
 				if !authenticate(context, authCollection, key, "read") {
 					return
 				}
-				listCreate(context, createOne, validator, logger)
+				listCreate(context, createOne, validatorMaker, logger)
 			})
 		case dsl.CreateVerb:
 			router.POST("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				listGet(context, getMany, validator, logger)
+				listGet(context, getMany, validatorMaker, logger)
 			})
 		case dsl.ReadVerb:
 			itemReadDefined = true
@@ -171,12 +171,12 @@ func registerListResourceEndpoints(
 					return
 				}
 				if id, ok := checkId(context, "id_or_method", true); ok {
-					listItemGet(context, getOne, id, validator, logger)
+					listItemGet(context, getOne, id, validatorMaker, logger)
 					return
 				} else {
 					resourceMethod(
 						context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
-						validator, logger,
+						validatorMaker, logger,
 					)
 				}
 			})
@@ -188,7 +188,7 @@ func registerListResourceEndpoints(
 				if id, ok := checkId(context, "id", true); !ok {
 					responses.NotFound(context)
 				} else {
-					listItemUpdate(context, updateOne, id, simulatedUpdate, validator, logger)
+					listItemUpdate(context, updateOne, id, simulatedUpdate, validatorMaker, logger)
 				}
 			})
 		case dsl.ReplaceVerb:
@@ -199,7 +199,7 @@ func registerListResourceEndpoints(
 				if id, ok := checkId(context, "id", true); !ok {
 					responses.NotFound(context)
 				} else {
-					listItemReplace(context, replaceOne, id, validator, logger)
+					listItemReplace(context, replaceOne, id, validatorMaker, logger)
 				}
 			})
 		case dsl.DeleteVerb:
@@ -210,7 +210,7 @@ func registerListResourceEndpoints(
 				if id, ok := checkId(context, "id", true); !ok {
 					responses.NotFound(context)
 				} else {
-					listItemDelete(context, deleteOne, id, validator, logger)
+					listItemDelete(context, deleteOne, id, validatorMaker, logger)
 				}
 			})
 		default:
@@ -225,7 +225,7 @@ func registerListResourceEndpoints(
 			}
 			resourceMethod(
 				context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
-				validator, logger,
+				validatorMaker, logger,
 			)
 		})
 	}
@@ -236,7 +236,7 @@ func registerListResourceEndpoints(
 		}
 		resourceMethod(
 			context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
-			validator, logger,
+			validatorMaker, logger,
 		)
 	})
 	router.GET("/"+key+"/:id/:method", func(context *gin.Context) {
@@ -248,7 +248,7 @@ func registerListResourceEndpoints(
 		} else {
 			itemMethod(
 				context, collection, filter, key, dsl.View, id, context.Param("method"), itemMethods, client,
-				validator, logger,
+				validatorMaker, logger,
 			)
 		}
 	})
@@ -261,7 +261,7 @@ func registerListResourceEndpoints(
 		} else {
 			itemMethod(
 				context, collection, filter, key, dsl.Operation, id, context.Param("method"), itemMethods, client,
-				validator, logger,
+				validatorMaker, logger,
 			)
 		}
 	})

@@ -14,47 +14,65 @@ import (
 )
 
 // simpleCreate is the full handler of the POST endpoint for simple resources.
-func simpleCreate(ctx *gin.Context, createOne CreateOneFunc, validator *validator.Validate, logger *slog.Logger) {
+func simpleCreate(
+	ctx *gin.Context, createOne CreateOneFunc, validatorMaker func() *validator.Validate,
+	logger *slog.Logger,
+) {
 	// TODO.
 }
 
 // simpleGet is the full handler of the GET endpoint for simple resources.
-func simpleGet(ctx *gin.Context, getOne GetOneFunc, validator *validator.Validate, logger *slog.Logger) {
+func simpleGet(
+	ctx *gin.Context, getOne GetOneFunc, validatorMaker func() *validator.Validate,
+	logger *slog.Logger,
+) {
 	// TODO.
 }
 
 // simpleDelete is the full handler of the DELETE endpoint for simple resources.
-func simpleDelete(ctx *gin.Context, deleteOne DeleteOneFunc, validator *validator.Validate, logger *slog.Logger) {
+func simpleDelete(
+	ctx *gin.Context, deleteOne DeleteOneFunc, validatorMaker func() *validator.Validate,
+	logger *slog.Logger,
+) {
 	// TODO.
 }
 
 // simpleUpdate is the full handler of the PATCH endpoint for simple resources.
 func simpleUpdate(
 	ctx *gin.Context, updateOne UpdateOneFunc, simulatedUpdate SimulatedUpdateFunc,
-	validator *validator.Validate, logger *slog.Logger,
+	validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
 	// TODO.
 }
 
 // simpleReplace is the full handler of the PUT endpoint for simple resources.
-func simpleReplace(ctx *gin.Context, replaceOne ReplaceOneFunc, validator *validator.Validate, logger *slog.Logger) {
+func simpleReplace(
+	ctx *gin.Context, replaceOne ReplaceOneFunc, validatorMaker func() *validator.Validate,
+	logger *slog.Logger,
+) {
 	// TODO.
 }
 
 // listCreate is the full handler of the POST endpoint for list resources.
-func listCreate(ctx *gin.Context, createOne CreateOneFunc, validator *validator.Validate, logger *slog.Logger) {
+func listCreate(
+	ctx *gin.Context, createOne CreateOneFunc, validatorMaker func() *validator.Validate,
+	logger *slog.Logger,
+) {
 	// TODO.
 }
 
 // listGet is the full handler of the GET endpoint for list resources.
-func listGet(ctx *gin.Context, getMany GetManyFunc, validator *validator.Validate, logger *slog.Logger) {
+func listGet(
+	ctx *gin.Context, getMany GetManyFunc, validatorMaker func() *validator.Validate,
+	logger *slog.Logger,
+) {
 	// TODO.
 }
 
 // listItemGet is the full handler of the GET endpoint for list item resources.
 func listItemGet(
 	ctx *gin.Context, getOne GetOneFunc, id primitive.ObjectID,
-	validator *validator.Validate, logger *slog.Logger,
+	validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
 	// TODO.
 }
@@ -62,23 +80,23 @@ func listItemGet(
 // listItemUpdate is the full handler of the PATCH endpoint for the list item resources.
 func listItemUpdate(
 	ctx *gin.Context, updateOne UpdateOneFunc, id primitive.ObjectID, simulatedUpdate SimulatedUpdateFunc,
-	validator *validator.Validate, logger *slog.Logger,
+	validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
 	// TODO.
 }
 
 // listItemReplace is the full handler of the PUT endpoint for the list item resources.
 func listItemReplace(
-	ctx *gin.Context, replaceOne ReplaceOneFunc, id primitive.ObjectID, validator *validator.Validate,
-	logger *slog.Logger,
+	ctx *gin.Context, replaceOne ReplaceOneFunc, id primitive.ObjectID,
+	validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
 	// TODO.
 }
 
 // listItemDelete is the full  handler of the DELETE endpoint for the list item resources.
 func listItemDelete(
-	ctx *gin.Context, deleteOne DeleteOneFunc, id primitive.ObjectID, validator *validator.Validate,
-	logger *slog.Logger,
+	ctx *gin.Context, deleteOne DeleteOneFunc, id primitive.ObjectID,
+	validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
 	// TODO.
 }
@@ -86,7 +104,7 @@ func listItemDelete(
 // resourceMethod is the full handler of a resource method.
 func resourceMethod(
 	ctx *gin.Context, collection *mongo.Collection, filter bson.M, resourceKey string, methodType dsl.MethodType,
-	method string, methods map[string]dsl.ResourceMethod, client *mongo.Client, validator *validator.Validate,
+	method string, methods map[string]dsl.ResourceMethod, client *mongo.Client, validatorMaker func() *validator.Validate,
 	logger *slog.Logger,
 ) {
 	if !strings.HasPrefix(method, "~") {
@@ -107,7 +125,7 @@ func resourceMethod(
 		logger.Debug(
 			"Invoking custom method: (type=%v name=%s) on resource: %s", methodType, method, resourceKey,
 		)
-		resourceMethod.Handler(ctx, client, resourceKey, method, collection, filter)
+		resourceMethod.Handler(ctx, client, resourceKey, method, collection, validatorMaker, filter)
 	}
 
 }
@@ -116,7 +134,7 @@ func resourceMethod(
 func itemMethod(
 	ctx *gin.Context, collection *mongo.Collection, filter bson.M, resourceKey string, methodType dsl.MethodType,
 	id primitive.ObjectID, method string, methods map[string]dsl.ItemMethod, client *mongo.Client,
-	validator *validator.Validate, logger *slog.Logger,
+	validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
 	if !strings.HasPrefix(method, "~") {
 		responses.NotFound(ctx)
@@ -136,6 +154,6 @@ func itemMethod(
 		logger.Debug(
 			"Invoking custom item method: (type=%v name=%s) on resource: %s", methodType, method, resourceKey,
 		)
-		itemMethod.Handler(ctx, client, resourceKey, method, collection, filter, id)
+		itemMethod.Handler(ctx, client, resourceKey, method, collection, validatorMaker, filter, id)
 	}
 }
