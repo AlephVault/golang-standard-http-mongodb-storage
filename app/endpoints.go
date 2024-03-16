@@ -40,6 +40,7 @@ func registerSimpleResourceEndpoints(
 	updateOne := makeUpdateOne(collection, filter, softDelete)
 	replaceOne := makeReplaceOne(collection, filter, softDelete)
 	deleteOne := makeDeleteOne(collection, filter, softDelete)
+	simulatedUpdate := makeSimulatedUpdate(tmpUpdatesCollection, make_)
 
 	verbs := resource.Verbs
 	if len(verbs) == 0 {
@@ -71,7 +72,7 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				simpleUpdate(context, updateOne, tmpUpdatesCollection)
+				simpleUpdate(context, updateOne, simulatedUpdate)
 			})
 			break
 		case dsl.ReplaceVerb:

@@ -21,7 +21,7 @@ func simpleDelete(ctx *gin.Context, deleteOne DeleteOneFunc) {
 }
 
 // simpleUpdate is the full handler of the PATCH endpoint for simple resources.
-func simpleUpdate(ctx *gin.Context, updateOne UpdateOneFunc) {
+func simpleUpdate(ctx *gin.Context, updateOne UpdateOneFunc, simulatedUpdate SimulatedUpdateFunc) {
 	// TODO.
 }
 
