@@ -1,8 +1,15 @@
 package app
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"log/slog"
 	"standard-http-mongodb-storage/core/dsl"
+	"standard-http-mongodb-storage/core/responses"
+	"strings"
 )
 
 // simpleCreate is the full handler of the POST endpoint for simple resources.
@@ -30,7 +37,83 @@ func simpleReplace(ctx *gin.Context, replaceOne ReplaceOneFunc) {
 	// TODO.
 }
 
-// simpleMethod is the full handler of a method.
-func simpleMethod(ctx *gin.Context, methodType dsl.MethodType, methods map[string]dsl.ResourceMethod) {
+// listCreate is the full handler of the POST endpoint for list resources.
+func listCreate(ctx *gin.Context, createOne CreateOneFunc) {
 	// TODO.
+}
+
+// listGet is the full handler of the GET endpoint for list resources.
+func listGet(ctx *gin.Context, getMany GetManyFunc) {
+	// TODO.
+}
+
+// listItemGet is the full handler of the GET endpoint for list item resources.
+func listItemGet(ctx *gin.Context, getOne GetOneFunc, id primitive.ObjectID) {
+	// TODO.
+}
+
+// listItemUpdate is the full handler of the PATCH endpoint for the list item resources.
+func listItemUpdate(
+	ctx *gin.Context, updateOne UpdateOneFunc, id primitive.ObjectID, simulatedUpdate SimulatedUpdateFunc,
+) {
+	// TODO.
+}
+
+// listItemReplace is the full handler of the PUT endpoint for the list item resources.
+func listItemReplace(ctx *gin.Context, replaceOne ReplaceOneFunc, id primitive.ObjectID) {
+	// TODO.
+}
+
+// listItemDelete is the full  handler of the DELETE endpoint for the list item resources.
+func listItemDelete(ctx *gin.Context, deleteOne DeleteOneFunc, id primitive.ObjectID) {
+	// TODO.
+}
+
+// resourceMethod is the full handler of a resource method.
+func resourceMethod(
+	ctx *gin.Context, collection *mongo.Collection, filter bson.M, resourceKey string, methodType dsl.MethodType,
+	method string, methods map[string]dsl.ResourceMethod, client *mongo.Client,
+) {
+	if !strings.HasPrefix(method, "~") {
+		responses.NotFound(ctx)
+		return
+	}
+	method = method[1:]
+	if resourceMethod, ok := methods[method]; !ok || resourceMethod.Handler == nil || resourceMethod.Type != methodType {
+		responses.NotFound(ctx)
+		return
+	} else {
+		defer func() {
+			if v := recover(); v != nil {
+				slog.Error(fmt.Sprintf("Panic! %v", v))
+				responses.InternalError(ctx)
+			}
+		}()
+		resourceMethod.Handler(ctx, client, resourceKey, method, collection, filter)
+	}
+
+}
+
+// itemMethod is the full handler of a resource method.
+func itemMethod(
+	ctx *gin.Context, collection *mongo.Collection, filter bson.M, resourceKey string, methodType dsl.MethodType,
+	id primitive.ObjectID, method string, methods map[string]dsl.ItemMethod, client *mongo.Client,
+) {
+	if !strings.HasPrefix(method, "~") {
+		responses.NotFound(ctx)
+		return
+	}
+	method = method[1:]
+	if itemMethod, ok := methods[method]; !ok || itemMethod.Handler == nil || itemMethod.Type != methodType {
+		responses.NotFound(ctx)
+		return
+	} else {
+		defer func() {
+			if v := recover(); v != nil {
+				slog.Error(fmt.Sprintf("Panic! %v", v))
+				responses.InternalError(ctx)
+			}
+		}()
+		itemMethod.Handler(ctx, client, resourceKey, method, collection, filter, id)
+	}
 }

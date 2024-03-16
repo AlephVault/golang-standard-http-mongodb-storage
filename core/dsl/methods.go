@@ -20,7 +20,7 @@ const (
 // collection. For simple resources, this will imply the only
 // record existing in it.
 type ResourceMethodHandler func(
-	context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M,
+	context *gin.Context, client *mongo.Client, resource, method string, collection *mongo.Collection, filter bson.M,
 )
 
 // ResourceMethod stands for a method entry which involves a handler and
@@ -34,7 +34,7 @@ type ResourceMethod struct {
 // ItemMethodHandler is a method that handles a specific collection
 // and some filtering data, now related to an item in particular.
 type ItemMethodHandler func(
-	context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M,
+	context *gin.Context, client *mongo.Client, resource, method string, collection *mongo.Collection, filter bson.M,
 	id primitive.ObjectID,
 )
 
@@ -42,6 +42,6 @@ type ItemMethodHandler func(
 // also telling whether it is a view or an operator. This handler is
 // related to a particular item.
 type ItemMethod struct {
-	Type    MethodType            `validate:"min=0,max=1"`
-	Handler ResourceMethodHandler `validate:"required"`
+	Type    MethodType        `validate:"min=0,max=1"`
+	Handler ItemMethodHandler `validate:"required"`
 }
