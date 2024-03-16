@@ -13,6 +13,44 @@ import (
 	"strings"
 )
 
+// validate executes the validator and, on errors, dumps a response.
+func validate(context *gin.Context, value any, validator_ *validator.Validate) bool {
+	if err := validator_.Struct(value); err != nil {
+		if errVE, ok := err.(validator.ValidationErrors); ok {
+			responses.InvalidFormat(context, errVE)
+		} else {
+			responses.UnexpectedFormat(context)
+		}
+		return false
+	}
+	return true
+}
+
+// readJSONBody attempts to read a JSON body from the request and parse the object.
+func readJSONBody(context *gin.Context, make_ func() any, validator_ *validator.Validate) (any, bool) {
+	// 1. Check that there's a JSON body
+	if context.Request.Body == nil || !strings.Contains(strings.ToLower(context.GetHeader("Content-Type")), "application/json") {
+		responses.UnexpectedFormat(context)
+		return nil, false
+	}
+
+	// 2. Convert it to an instance of map[string]any
+	myValue := make_()
+	if err := context.ShouldBindJSON(&myValue); err != nil {
+		responses.UnexpectedFormat(context)
+		return nil, false
+	}
+
+	// 3. If a validator is specified, validate.
+	//    NOTES: This will not be invoked in maps.
+	if !validate(context, myValue, validator_) {
+		return nil, false
+	}
+
+	// Return the parsed body.
+	return myValue, true
+}
+
 // simpleCreate is the full handler of the POST endpoint for simple resources.
 func simpleCreate(
 	ctx *gin.Context, createOne CreateOneFunc, make_ func() any, validatorMaker func() *validator.Validate,
