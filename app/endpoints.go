@@ -58,7 +58,6 @@ func registerSimpleResourceEndpoints(
 				}
 				simpleCreate(context, createOne, logger)
 			})
-			break
 		case dsl.ReadVerb:
 			router.GET("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "read") {
@@ -66,7 +65,6 @@ func registerSimpleResourceEndpoints(
 				}
 				simpleGet(context, getOne, logger)
 			})
-			break
 		case dsl.UpdateVerb:
 			router.PATCH("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "write") {
@@ -74,7 +72,6 @@ func registerSimpleResourceEndpoints(
 				}
 				simpleUpdate(context, updateOne, simulatedUpdate, logger)
 			})
-			break
 		case dsl.ReplaceVerb:
 			router.PUT("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "write") {
@@ -82,7 +79,6 @@ func registerSimpleResourceEndpoints(
 				}
 				simpleReplace(context, replaceOne, logger)
 			})
-			break
 		case dsl.DeleteVerb:
 			router.DELETE("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "delete") {
@@ -90,7 +86,6 @@ func registerSimpleResourceEndpoints(
 				}
 				simpleDelete(context, deleteOne, logger)
 			})
-			break
 		default:
 			slog.Info("Ignoring an unknown verb", "verb", verb)
 		}
