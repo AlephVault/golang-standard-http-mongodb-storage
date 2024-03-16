@@ -15,18 +15,20 @@ const (
 	Operation
 )
 
-// ListMethodHandler is a method that handles a specific collection
-// and some filtering data, related to the whole collection.
-type ListMethodHandler func(
+// ResourceMethodHandler is a method that handles a specific
+// collection and some filtering data, related to the whole
+// collection. For simple resources, this will imply the only
+// record existing in it.
+type ResourceMethodHandler func(
 	context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M,
 )
 
-// ListMethod stands for a method entry which involves a handler and
+// ResourceMethod stands for a method entry which involves a handler and
 // also telling whether it is a view or an operator. This handler is
 // related to the whole list.
-type ListMethod struct {
-	Type    MethodType        `validate:"min=0,max=1"`
-	Handler ListMethodHandler `validate:"required"`
+type ResourceMethod struct {
+	Type    MethodType            `validate:"min=0,max=1"`
+	Handler ResourceMethodHandler `validate:"required"`
 }
 
 // ItemMethodHandler is a method that handles a specific collection
@@ -40,6 +42,6 @@ type ItemMethodHandler func(
 // also telling whether it is a view or an operator. This handler is
 // related to a particular item.
 type ItemMethod struct {
-	Type    MethodType        `validate:"min=0,max=1"`
-	Handler ListMethodHandler `validate:"required"`
+	Type    MethodType            `validate:"min=0,max=1"`
+	Handler ResourceMethodHandler `validate:"required"`
 }

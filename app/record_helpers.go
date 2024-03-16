@@ -2,11 +2,13 @@ package app
 
 import (
 	"context"
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"maps"
+	"standard-http-mongodb-storage/core/dsl"
 )
 
 // CreateOneFunc stands for a function that creates one element.
@@ -27,6 +29,10 @@ type ReplaceOneFunc func(context.Context, primitive.ObjectID, interface{}) (bool
 // GetManyFunc stands for a function that gets many documents.
 type GetManyFunc func(context.Context, int64, int64) ([]interface{}, error)
 
+// SimulatedUpdateFunc is a function that interacts with a collection
+// and performs a preview of an in-collection update later.
+type SimulatedUpdateFunc func(*gin.Context, primitive.ObjectID, interface{}, interface{}) (interface{}, error)
+
 // setId sets the id in a filter, if any. It also sets a filter
 // on the _deleted field if softDelete is true.
 func setId(filter bson.M, id primitive.ObjectID, softDelete bool) (bson.M, error) {
@@ -46,10 +52,10 @@ func setId(filter bson.M, id primitive.ObjectID, softDelete bool) (bson.M, error
 
 // makeCreateOne creates a document.
 func makeCreateOne(
-	client *mongo.Client, resDB, resCollection string,
+	collection *mongo.Collection,
 ) CreateOneFunc {
 	return func(ctx context.Context, content interface{}) (primitive.ObjectID, error) {
-		if result, err := client.Database(resDB).Collection(resCollection).InsertOne(ctx, content); err != nil {
+		if result, err := collection.InsertOne(ctx, content); err != nil {
 			return primitive.ObjectID{}, err
 		} else {
 			return result.InsertedID.(primitive.ObjectID), nil
@@ -206,33 +212,36 @@ func makeReplaceOne(
 	}
 }
 
-// simulatedUpdate simulates an update (it actually inserts the object and updates
-// it in a new, temporary, collection to anticipate how would an updated document
-// becomes, to then be validated).
-func simulatedUpdate(
-	ctx context.Context, id primitive.ObjectID, collection *mongo.Collection, make func() interface{}, entity, updates interface{},
-) (interface{}, error) {
-	filter := bson.M{"_id": id}
-	if _, err := collection.ReplaceOne(
-		ctx, filter, entity, options.Replace().SetUpsert(true),
-	); err != nil {
-		return nil, err
-	} else if _, err := collection.UpdateOne(ctx, filter, bson.M{"$set": updates}); err != nil {
-		return nil, err
-	} else if result := collection.FindOne(ctx, filter); result.Err() != nil {
-		return nil, err
-	} else {
-		obj := make()
-		var map_ bson.M
-		if err := result.Decode(&map_); err != nil {
+// makeSimulatedUpdate makes a function that performs a simulated update
+// (using on a temporary collection) to simulate an actual update on the
+// object, and retrieve it (as a full preview) so it can be validated
+// before making the actual in-collection update.
+func makeSimulatedUpdate(
+	tmpCollection *mongo.Collection, make dsl.ModelTypeFunction,
+) func(*gin.Context, primitive.ObjectID, interface{}, interface{}) (interface{}, error) {
+	return func(ctx *gin.Context, entityId primitive.ObjectID, entity, updates interface{}) (interface{}, error) {
+		filter := bson.M{"_id": entityId}
+		if _, err := tmpCollection.ReplaceOne(
+			ctx, filter, entity, options.Replace().SetUpsert(true),
+		); err != nil {
 			return nil, err
+		} else if _, err := tmpCollection.UpdateOne(ctx, filter, bson.M{"$set": updates}); err != nil {
+			return nil, err
+		} else if result := tmpCollection.FindOne(ctx, filter); result.Err() != nil {
+			return nil, err
+		} else {
+			obj := make()
+			var map_ bson.M
+			if err := result.Decode(&map_); err != nil {
+				return nil, err
+			}
+			delete(map_, "_id")
+			if raw, err := bson.Marshal(map_); err != nil {
+				return nil, err
+			} else if err := bson.Unmarshal(raw, &obj); err != nil {
+				return nil, err
+			}
+			return obj, nil
 		}
-		delete(map_, "_id")
-		if raw, err := bson.Marshal(map_); err != nil {
-			return nil, err
-		} else if err := bson.Unmarshal(raw, &obj); err != nil {
-			return nil, err
-		}
-		return obj, nil
 	}
 }

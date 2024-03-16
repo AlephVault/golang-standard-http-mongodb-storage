@@ -94,7 +94,7 @@ var (
 		},
 		SoftDelete: true,
 		ModelType:  dsl.ModelType[Universe],
-		// ListProjection: bson.D{{"foo", "bar"}},
+		// Projection: bson.D{{"foo", "bar"}},
 		ItemProjection: bson.D{{"caption", 1}, {"motd", 1}},
 		ItemMethods: map[string]dsl.ItemMethod{
 			"set-motd": {

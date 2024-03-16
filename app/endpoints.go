@@ -25,8 +25,21 @@ func registerSimpleResourceEndpoints(
 	client *mongo.Client, router *gin.Engine, key string,
 	resource *dsl.Resource, auth *dsl.Auth,
 ) {
-	// tmpUpdatesCollection := client.Database("~tmp").Collection("updates")
+	tmpUpdatesCollection := client.Database("~tmp").Collection("updates")
 	authCollection := client.Database(auth.Db).Collection(auth.Collection)
+	collection := client.Database(resource.Db).Collection(resource.Collection)
+	filter := resource.Filter
+	softDelete := resource.SoftDelete
+	sort := resource.Sort
+	projection := resource.Projection
+
+	make_ := resource.ModelType
+
+	createOne := makeCreateOne(collection)
+	getOne := makeGetOne(collection, make_, softDelete, filter, projection, sort)
+	updateOne := makeUpdateOne(collection, filter, softDelete)
+	replaceOne := makeReplaceOne(collection, filter, softDelete)
+	deleteOne := makeDeleteOne(collection, filter, softDelete)
 
 	verbs := resource.Verbs
 	if len(verbs) == 0 {
@@ -42,8 +55,7 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-
-				// TODO simple resource CREATE, 409, or some error.
+				simpleCreate(context, createOne)
 			})
 			break
 		case dsl.ReadVerb:
@@ -51,8 +63,7 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "read") {
 					return
 				}
-
-				// TODO implement GET, 404, or error.
+				simpleGet(context, getOne)
 			})
 			break
 		case dsl.UpdateVerb:
@@ -60,8 +71,7 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-
-				// TODO simple resource PATCH, 404, or some error.
+				simpleUpdate(context, updateOne, tmpUpdatesCollection)
 			})
 			break
 		case dsl.ReplaceVerb:
@@ -69,8 +79,7 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-
-				// TODO simple resource UPSERT, or some error.
+				simpleReplace(context, replaceOne)
 			})
 			break
 		case dsl.DeleteVerb:
@@ -78,8 +87,7 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "delete") {
 					return
 				}
-
-				// TODO simple resource PATH
+				simpleDelete(context, deleteOne)
 			})
 			break
 		default:
@@ -91,15 +99,13 @@ func registerSimpleResourceEndpoints(
 		if !authenticate(context, authCollection, key, "read") {
 			return
 		}
-
-		// TODO simple resource GET + run a VIEW method.
+		simpleMethod(context, dsl.View, resource.Methods)
 	})
 	router.POST("/"+key+"/:method", func(context *gin.Context) {
 		if !authenticate(context, authCollection, key, "write") {
 			return
 		}
-
-		// TODO simple resource GET + run an OPERATION method.
+		simpleMethod(context, dsl.Operation, resource.Methods)
 	})
 }
 
@@ -155,7 +161,7 @@ func registerListResourceEndpoints(
 					return
 				}
 				method = method[1:]
-				if listMethod, ok := resource.ListMethods[method]; !ok || listMethod.Handler == nil || listMethod.Type == dsl.Operation {
+				if listMethod, ok := resource.Methods[method]; !ok || listMethod.Handler == nil || listMethod.Type == dsl.Operation {
 					responses.NotFound(context)
 					return
 				} else {
@@ -221,7 +227,7 @@ func registerListResourceEndpoints(
 				return
 			}
 			method = method[1:]
-			if listMethod, ok := resource.ListMethods[method]; !ok || listMethod.Handler == nil || listMethod.Type == dsl.Operation {
+			if listMethod, ok := resource.Methods[method]; !ok || listMethod.Handler == nil || listMethod.Type == dsl.Operation {
 				responses.NotFound(context)
 				return
 			} else {
