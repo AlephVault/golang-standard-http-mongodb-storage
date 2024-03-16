@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -8,18 +9,63 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"standard-http-mongodb-storage/core/dsl"
+	"standard-http-mongodb-storage/core/responses"
 	"standard-http-mongodb-storage/core/validation"
+	"strings"
 )
 
+// Panicked is a class that wraps a panicked value into an error.
 type Panicked struct {
 	With any
 }
 
+// Error stands for the implementation of the Error interface,
+// always rendering the panicked value.
 func (panicked *Panicked) Error() string {
 	return fmt.Sprintf("Panicked with: %v", panicked.With)
+}
+
+type customResponseWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w *customResponseWriter) Write(b []byte) (int, error) {
+	w.body.Write(b)
+	return w.ResponseWriter.Write(b)
+}
+
+func wrapStatus(c *gin.Context) {
+	buff := new(bytes.Buffer)
+	c.Writer = &customResponseWriter{body: buff, ResponseWriter: c.Writer}
+
+	c.Next()
+
+	// After request handler execution
+	if !strings.Contains(c.Writer.Header().Get("Content-Type"), "application/json") {
+		switch c.Writer.Status() {
+		case http.StatusNotFound:
+			c.Abort()
+			responses.NotFound(c)
+		case http.StatusInternalServerError:
+			c.Abort()
+			responses.InternalError(c)
+		case http.StatusMethodNotAllowed:
+			c.Abort()
+			responses.MethodNotAllowed(c)
+		case http.StatusForbidden:
+			c.Abort()
+			responses.AuthForbidden(c)
+		case http.StatusUnauthorized:
+			c.Abort()
+			responses.AuthNotFound(c)
+		}
+	}
 }
 
 // MakeServer is used to create a server. The connection
@@ -63,8 +109,17 @@ func MakeServer(
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
+	// Create the router.
+	router := gin.New()
+	router.Use(gin.Logger(), gin.CustomRecovery(func(c *gin.Context, err any) {
+		if err != nil {
+			log.Printf("panic recovered: %v", err)
+		}
+		c.Abort()
+		responses.InternalError(c)
+	}), wrapStatus)
+
 	// Configure the endpoints.
-	router := gin.Default()
 	for resourceKey, resource := range settings.Resources {
 		registerEndpoints(client, router, resourceKey, &resource, &settings.Auth, resourcesValidator, logger)
 	}
