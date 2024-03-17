@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -16,7 +17,8 @@ import (
 // validate executes the validator and, on errors, dumps a response.
 func validate(context *gin.Context, value any, validator_ *validator.Validate) bool {
 	if err := validator_.Struct(value); err != nil {
-		if errVE, ok := err.(validator.ValidationErrors); ok {
+		var errVE validator.ValidationErrors
+		if ok := errors.As(err, &errVE); ok {
 			responses.InvalidFormat(context, errVE)
 		} else {
 			responses.UnexpectedFormat(context)
@@ -69,26 +71,51 @@ func simpleCreate(
 
 // simpleGet is the full handler of the GET endpoint for simple resources.
 func simpleGet(
-	ctx *gin.Context, getOne GetOneFunc, validatorMaker func() *validator.Validate,
-	logger *slog.Logger,
+	ctx *gin.Context, getOne GetOneFunc, logger *slog.Logger,
 ) {
-	// TODO.
+	if element, err := getOne(ctx, primitive.NilObjectID); err == nil {
+		responses.OkWith(ctx, element)
+	} else if errors.Is(err, mongo.ErrNoDocuments) {
+		responses.NotFound(ctx)
+	}
 }
 
 // simpleDelete is the full handler of the DELETE endpoint for simple resources.
 func simpleDelete(
-	ctx *gin.Context, deleteOne DeleteOneFunc, validatorMaker func() *validator.Validate,
-	logger *slog.Logger,
+	ctx *gin.Context, deleteOne DeleteOneFunc, logger *slog.Logger,
 ) {
-	// TODO.
+	if deleted, err := deleteOne(ctx, primitive.NilObjectID); err != nil {
+		responses.InternalError(ctx)
+	} else if !deleted {
+		responses.NotFound(ctx)
+	} else {
+		responses.Ok(ctx)
+	}
 }
 
 // simpleUpdate is the full handler of the PATCH endpoint for simple resources.
 func simpleUpdate(
-	ctx *gin.Context, updateOne UpdateOneFunc, makeMap func() any, simulatedUpdate SimulatedUpdateFunc,
-	validatorMaker func() *validator.Validate, logger *slog.Logger,
+	ctx *gin.Context, getOne GetOneFunc, idGetter IDGetter, replaceOne ReplaceOneFunc, makeMap func() any,
+	simulatedUpdate SimulatedUpdateFunc, validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
-	// TODO.
+	if element, err := getOne(ctx, primitive.NilObjectID); err != nil {
+		if updates, success := readJSONBody(ctx, makeMap, nil); success {
+			id := idGetter(element)
+			if result, err := simulatedUpdate(ctx, id, element, updates); err != nil {
+				responses.InternalError(ctx)
+			} else if updated, err := replaceOne(ctx, id, result); err != nil {
+				responses.InternalError(ctx)
+			} else if updated {
+				responses.OkWith(ctx, result)
+			} else {
+				responses.NotFound(ctx)
+			}
+		}
+	} else if errors.Is(err, mongo.ErrNoDocuments) {
+		responses.NotFound(ctx)
+	} else {
+		responses.InternalError(ctx)
+	}
 }
 
 // simpleReplace is the full handler of the PUT endpoint for simple resources.

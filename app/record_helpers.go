@@ -8,8 +8,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"maps"
+	"reflect"
 	"standard-http-mongodb-storage/core/dsl"
+	"strings"
 )
+
+// IDGetter is a function that returns the ID of an object.
+type IDGetter func(any) primitive.ObjectID
 
 // CreateOneFunc stands for a function that creates one element.
 type CreateOneFunc func(context.Context, any) (primitive.ObjectID, error)
@@ -243,5 +248,47 @@ func makeSimulatedUpdate(
 			}
 			return obj, nil
 		}
+	}
+}
+
+// makeIDGetter returns a function which is the ID getter for a struct.
+func makeIDGetter(template any) IDGetter {
+	if template == nil {
+		panic("the template is null")
+	}
+
+	val := reflect.ValueOf(template)
+	typ := val.Type()
+	typeName := typ.Name()
+	if val.Kind() == reflect.Struct {
+		fieldIndex := -1
+		for i := 0; i < val.NumField(); i++ {
+			field := typ.Field(i)
+			tag := field.Tag.Get("bson")
+			if (tag == "_id" || strings.HasPrefix(tag, "_id,")) &&
+				field.Type == reflect.TypeOf(primitive.NilObjectID) {
+				fieldIndex = i
+
+				break
+			}
+		}
+		if fieldIndex == -1 {
+			panic("the type doesn't have an _id-mapped field: " + typeName)
+		} else {
+			return func(value any) primitive.ObjectID {
+				if value == nil {
+					panic("nil interface provided")
+				}
+				val := reflect.ValueOf(value)
+				if val.Type() != typ {
+					panic("invalid type: " + val.Type().Name())
+				} else {
+					return val.Field(fieldIndex).Interface().(primitive.ObjectID)
+				}
+			}
+		}
+
+	} else {
+		panic("the type is not a struct: " + typeName)
 	}
 }

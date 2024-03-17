@@ -35,13 +35,13 @@ func registerSimpleResourceEndpoints(
 	sort := resource.Sort
 	projection := resource.Projection
 	methods := resource.Methods
+	idGetter := makeIDGetter(resource.ModelType())
 
 	make_ := resource.ModelType
 	makeMap := func() any { return make(bson.M) }
 
 	createOne := makeCreateOne(collection)
 	getOne := makeGetOne(collection, make_, softDelete, filter, projection, sort)
-	updateOne := makeUpdateOne(collection, filter, softDelete)
 	replaceOne := makeReplaceOne(collection, filter, softDelete)
 	deleteOne := makeDeleteOne(collection, filter, softDelete)
 	simulatedUpdate := makeSimulatedUpdate(tmpUpdatesCollection, make_)
@@ -67,14 +67,14 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "read") {
 					return
 				}
-				simpleGet(context, getOne, validatorMaker, logger)
+				simpleGet(context, getOne, logger)
 			})
 		case dsl.UpdateVerb:
 			router.PATCH("/"+key, func(context *gin.Context) {
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				simpleUpdate(context, updateOne, makeMap, simulatedUpdate, validatorMaker, logger)
+				simpleUpdate(context, getOne, idGetter, replaceOne, makeMap, simulatedUpdate, validatorMaker, logger)
 			})
 		case dsl.ReplaceVerb:
 			router.PUT("/"+key, func(context *gin.Context) {
@@ -88,7 +88,7 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "delete") {
 					return
 				}
-				simpleDelete(context, deleteOne, validatorMaker, logger)
+				simpleDelete(context, deleteOne, logger)
 			})
 		default:
 			slog.Info("Ignoring an unknown verb", "verb", verb)
