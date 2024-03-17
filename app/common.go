@@ -1,10 +1,12 @@
 package app
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"regexp"
 	"standard-http-mongodb-storage/core/auth"
 	"standard-http-mongodb-storage/core/responses"
 	"strings"
@@ -79,4 +81,22 @@ func authenticate(ctx *gin.Context, collection *mongo.Collection, key, permissio
 	}
 
 	return true
+}
+
+var rxDuplicateError = regexp.MustCompile(`E11000|E11001|E12582|16460`)
+
+// Tells whether an error is a Duplicate Key error.
+func isDuplicateKeyError(err error) bool {
+	var writeException mongo.WriteException
+	if errors.As(err, &writeException) {
+		for _, we := range writeException.WriteErrors {
+			code := we.Code
+			if code == 11000 || code == 11001 || code == 12582 || code == 16460 {
+				return true
+			}
+		}
+	}
+
+	// Fallback to checking the error message directly if it's not a WriteException
+	return rxDuplicateError.MatchString(err.Error())
 }

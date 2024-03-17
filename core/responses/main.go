@@ -125,9 +125,8 @@ func AlreadyExists(c *gin.Context) {
 
 // DuplicateKey dumps a "duplicate key" message response
 // (409) with the attempted key combination.
-func DuplicateKey(c *gin.Context, key any) {
+func DuplicateKey(c *gin.Context) {
 	c.JSON(http.StatusConflict, gin.H{
 		"code": "duplicate-key",
-		"key":  key,
 	})
 }

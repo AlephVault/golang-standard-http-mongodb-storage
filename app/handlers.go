@@ -53,10 +53,18 @@ func readJSONBody(context *gin.Context, make_ func() any, validator_ *validator.
 
 // simpleCreate is the full handler of the POST endpoint for simple resources.
 func simpleCreate(
-	ctx *gin.Context, createOne CreateOneFunc, make_ func() any, validatorMaker func() *validator.Validate,
-	logger *slog.Logger,
+	ctx *gin.Context, createOne CreateOneFunc, getOne GetOneFunc, make_ func() any,
+	validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
-	// TODO.
+	if _, err := getOne(ctx, primitive.NilObjectID); err == nil {
+		responses.AlreadyExists(ctx)
+	} else if parsed, ok := readJSONBody(ctx, make_, validatorMaker()); ok {
+		if id, err := createOne(ctx, parsed); err == nil {
+			responses.OkWith(ctx, id)
+		} else if isDuplicateKeyError(err) {
+			responses.DuplicateKey(ctx)
+		}
+	}
 }
 
 // simpleGet is the full handler of the GET endpoint for simple resources.
