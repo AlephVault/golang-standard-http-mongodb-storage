@@ -60,7 +60,7 @@ func registerSimpleResourceEndpoints(
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				simpleCreate(context, createOne, make_, validatorMaker, logger)
+				simpleCreate(context, createOne, getOne, make_, validatorMaker, logger)
 			})
 		case dsl.ReadVerb:
 			router.GET("/"+key, func(context *gin.Context) {
