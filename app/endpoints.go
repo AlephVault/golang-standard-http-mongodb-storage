@@ -13,12 +13,14 @@ import (
 func registerEndpoints(
 	client *mongo.Client, router *gin.Engine, key string,
 	resource *dsl.Resource, auth *dsl.Auth, resourcesValidatorMaker func() *validator.Validate,
-	logger *slog.Logger,
+	listMaxResults int64, logger *slog.Logger,
 ) {
 	if resource.Type == dsl.SimpleResource {
 		registerSimpleResourceEndpoints(client, router, key, resource, auth, resourcesValidatorMaker, logger)
 	} else {
-		registerListResourceEndpoints(client, router, key, resource, auth, resourcesValidatorMaker, logger)
+		registerListResourceEndpoints(
+			client, router, key, resource, auth, resourcesValidatorMaker, listMaxResults, logger,
+		)
 	}
 }
 
@@ -118,7 +120,7 @@ func registerSimpleResourceEndpoints(
 func registerListResourceEndpoints(
 	client *mongo.Client, router *gin.Engine, key string,
 	resource *dsl.Resource, auth *dsl.Auth, validatorMaker func() *validator.Validate,
-	logger *slog.Logger,
+	listMaxResults int64, logger *slog.Logger,
 ) {
 	tmpUpdatesCollection := client.Database("~tmp").Collection("updates")
 	authCollection := client.Database(auth.Db).Collection(auth.Collection)
@@ -165,7 +167,7 @@ func registerListResourceEndpoints(
 				if !authenticate(context, authCollection, key, "write") {
 					return
 				}
-				listGet(context, getMany, validatorMaker, logger)
+				listGet(context, getMany, listMaxResults, logger)
 			})
 		case dsl.ReadVerb:
 			itemReadDefined = true

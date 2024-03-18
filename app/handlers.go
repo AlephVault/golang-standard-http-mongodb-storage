@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"standard-http-mongodb-storage/core/dsl"
 	"standard-http-mongodb-storage/core/responses"
+	"strconv"
 	"strings"
 )
 
@@ -103,6 +104,8 @@ func simpleUpdate(
 			id := idGetter(element)
 			if result, err := simulatedUpdate(ctx, id, element, updates); err != nil {
 				responses.InternalError(ctx)
+			} else if !validate(ctx, result, validatorMaker()) {
+				// Nothing here.
 			} else if updated, err := replaceOne(ctx, id, result); err != nil {
 				responses.InternalError(ctx)
 			} else if updated {
@@ -123,7 +126,15 @@ func simpleReplace(
 	ctx *gin.Context, replaceOne ReplaceOneFunc, make_ func() any, validatorMaker func() *validator.Validate,
 	logger *slog.Logger,
 ) {
-	// TODO.
+	if replacement, ok := readJSONBody(ctx, make_, validatorMaker()); ok {
+		if ok, err := replaceOne(ctx, primitive.NilObjectID, replacement); err != nil {
+			responses.InternalError(ctx)
+		} else if !ok {
+			responses.NotFound(ctx)
+		} else {
+			responses.Ok(ctx)
+		}
+	}
 }
 
 // listCreate is the full handler of the POST endpoint for list resources.
@@ -131,15 +142,38 @@ func listCreate(
 	ctx *gin.Context, createOne CreateOneFunc, make_ func() any, validatorMaker func() *validator.Validate,
 	logger *slog.Logger,
 ) {
-	// TODO.
+	if parsed, ok := readJSONBody(ctx, make_, validatorMaker()); ok {
+		if id, err := createOne(ctx, parsed); err == nil {
+			responses.OkWith(ctx, id)
+		} else if isDuplicateKeyError(err) {
+			responses.DuplicateKey(ctx)
+		}
+	}
 }
 
 // listGet is the full handler of the GET endpoint for list resources.
 func listGet(
-	ctx *gin.Context, getMany GetManyFunc, validatorMaker func() *validator.Validate,
-	logger *slog.Logger,
+	ctx *gin.Context, getMany GetManyFunc, defaultLimit int64, logger *slog.Logger,
 ) {
-	// TODO.
+	var skip, limit int64
+
+	// Get "skip" query parameter
+	skipParam := ctx.Query("skip")
+	if skipValue, err := strconv.ParseInt(skipParam, 10, 64); err == nil && skipValue > 0 {
+		skip = skipValue
+	}
+
+	// Get "limit" query parameter
+	limitParam := ctx.Query("limit")
+	if limitValue, err := strconv.ParseInt(limitParam, 10, 64); err == nil && limitValue > 0 {
+		limit = limitValue
+	}
+
+	if result, err := getMany(ctx, skip, limit); err != nil {
+		responses.InternalError(ctx)
+	} else {
+		responses.OkWith(ctx, result)
+	}
 }
 
 // listItemGet is the full handler of the GET endpoint for list item resources.

@@ -1,8 +1,10 @@
 package dsl
 
+const DefaultListMaxSize int64 = 20
+
 // Global stands for settings for ALL the resources.
 type Global struct {
-	ListMaxResults uint
+	ListMaxResults int64
 }
 
 // Prepare installs the default values in the global settings.

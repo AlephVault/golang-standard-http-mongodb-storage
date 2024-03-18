@@ -92,6 +92,9 @@ func MakeServer(
 	}
 
 	// Make the validator to use and validate the settings.
+	if settings.Global.ListMaxResults <= 0 {
+		settings.Global.ListMaxResults = dsl.DefaultListMaxSize
+	}
 	settingsValidator := validation.Validator()
 	if err = settingsValidator.Struct(settings); err != nil {
 		return
@@ -124,7 +127,10 @@ func MakeServer(
 
 	// Configure the endpoints.
 	for resourceKey, resource := range settings.Resources {
-		registerEndpoints(client, router, resourceKey, &resource, &settings.Auth, resourcesValidatorMaker, logger)
+		registerEndpoints(
+			client, router, resourceKey, &resource, &settings.Auth, resourcesValidatorMaker,
+			settings.Global.ListMaxResults, logger,
+		)
 	}
 
 	// Create the final application object.
