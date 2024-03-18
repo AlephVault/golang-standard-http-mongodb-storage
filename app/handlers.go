@@ -178,18 +178,39 @@ func listGet(
 
 // listItemGet is the full handler of the GET endpoint for list item resources.
 func listItemGet(
-	ctx *gin.Context, getOne GetOneFunc, id primitive.ObjectID,
-	validatorMaker func() *validator.Validate, logger *slog.Logger,
+	ctx *gin.Context, getOne GetOneFunc, id primitive.ObjectID, logger *slog.Logger,
 ) {
-	// TODO.
+	if element, err := getOne(ctx, id); err == nil {
+		responses.OkWith(ctx, element)
+	} else if errors.Is(err, mongo.ErrNoDocuments) {
+		responses.NotFound(ctx)
+	}
 }
 
 // listItemUpdate is the full handler of the PATCH endpoint for the list item resources.
 func listItemUpdate(
-	ctx *gin.Context, updateOne UpdateOneFunc, makeMap func() any, id primitive.ObjectID,
+	ctx *gin.Context, getOne GetOneFunc, replaceOne ReplaceOneFunc, makeMap func() any, id primitive.ObjectID,
 	simulatedUpdate SimulatedUpdateFunc, validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
-	// TODO.
+	if element, err := getOne(ctx, id); err != nil {
+		if updates, success := readJSONBody(ctx, makeMap, nil); success {
+			if result, err := simulatedUpdate(ctx, id, element, updates); err != nil {
+				responses.InternalError(ctx)
+			} else if !validate(ctx, result, validatorMaker()) {
+				// Nothing here.
+			} else if updated, err := replaceOne(ctx, id, result); err != nil {
+				responses.InternalError(ctx)
+			} else if updated {
+				responses.OkWith(ctx, result)
+			} else {
+				responses.NotFound(ctx)
+			}
+		}
+	} else if errors.Is(err, mongo.ErrNoDocuments) {
+		responses.NotFound(ctx)
+	} else {
+		responses.InternalError(ctx)
+	}
 }
 
 // listItemReplace is the full handler of the PUT endpoint for the list item resources.
@@ -197,15 +218,28 @@ func listItemReplace(
 	ctx *gin.Context, replaceOne ReplaceOneFunc, make_ func() any, id primitive.ObjectID,
 	validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) {
-	// TODO.
+	if replacement, ok := readJSONBody(ctx, make_, validatorMaker()); ok {
+		if ok, err := replaceOne(ctx, id, replacement); err != nil {
+			responses.InternalError(ctx)
+		} else if !ok {
+			responses.NotFound(ctx)
+		} else {
+			responses.Ok(ctx)
+		}
+	}
 }
 
 // listItemDelete is the full  handler of the DELETE endpoint for the list item resources.
 func listItemDelete(
-	ctx *gin.Context, deleteOne DeleteOneFunc, id primitive.ObjectID,
-	validatorMaker func() *validator.Validate, logger *slog.Logger,
+	ctx *gin.Context, deleteOne DeleteOneFunc, id primitive.ObjectID, logger *slog.Logger,
 ) {
-	// TODO.
+	if deleted, err := deleteOne(ctx, id); err != nil {
+		responses.InternalError(ctx)
+	} else if !deleted {
+		responses.NotFound(ctx)
+	} else {
+		responses.Ok(ctx)
+	}
 }
 
 // resourceMethod is the full handler of a resource method.

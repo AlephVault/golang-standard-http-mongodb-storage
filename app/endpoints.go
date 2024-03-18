@@ -139,7 +139,6 @@ func registerListResourceEndpoints(
 	createOne := makeCreateOne(collection)
 	getMany := makeGetMany(collection, make_, softDelete, filter, projection, sort)
 	getOne := makeGetOne(collection, make_, softDelete, filter, itemProjection, sort)
-	updateOne := makeUpdateOne(collection, filter, softDelete)
 	replaceOne := makeReplaceOne(collection, filter, softDelete)
 	deleteOne := makeDeleteOne(collection, filter, softDelete)
 	simulatedUpdate := makeSimulatedUpdate(tmpUpdatesCollection, make_)
@@ -176,7 +175,7 @@ func registerListResourceEndpoints(
 					return
 				}
 				if id, ok := checkId(context, "id_or_method", true); ok {
-					listItemGet(context, getOne, id, validatorMaker, logger)
+					listItemGet(context, getOne, id, logger)
 					return
 				} else {
 					resourceMethod(
@@ -193,7 +192,7 @@ func registerListResourceEndpoints(
 				if id, ok := checkId(context, "id", true); !ok {
 					responses.NotFound(context)
 				} else {
-					listItemUpdate(context, updateOne, makeMap, id, simulatedUpdate, validatorMaker, logger)
+					listItemUpdate(context, getOne, replaceOne, makeMap, id, simulatedUpdate, validatorMaker, logger)
 				}
 			})
 		case dsl.ReplaceVerb:
@@ -215,7 +214,7 @@ func registerListResourceEndpoints(
 				if id, ok := checkId(context, "id", true); !ok {
 					responses.NotFound(context)
 				} else {
-					listItemDelete(context, deleteOne, id, validatorMaker, logger)
+					listItemDelete(context, deleteOne, id, logger)
 				}
 			})
 		default:
