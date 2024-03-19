@@ -67,9 +67,9 @@ func (c *Connection) Connect() (*mongo.Client, error) {
 	} else {
 		if cli, err := connections.ConnectWithFields(c.Args.Host, c.Args.Port, c.Args.Username, c.Args.Password, options); err != nil {
 			c.client = nil
-			return cli, nil
-		} else {
 			return nil, err
+		} else {
+			return cli, nil
 		}
 	}
 }
