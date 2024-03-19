@@ -45,10 +45,10 @@ type Resource struct {
 	Type           ResourceType `validate:"min=0,max=1"`
 	Sort           bson.D
 	Filter         bson.M
-	ItemProjection bson.D
-	Projection     bson.D                    `validate:"required_iif=Type 1,excluded_if=Type 1"`
-	ItemMethods    map[string]ItemMethod     `validate:"dive,keys,method-name,endkeys,dive"`
-	Methods        map[string]ResourceMethod `validate:"required_iif=Type 1,excluded_if=Type 1,dive,keys,method-name,endkeys,dive"`
+	ItemProjection bson.D `validate:"excluded_if=Type 1"`
+	Projection     bson.D
+	ItemMethods    map[string]ItemMethod     `validate:"excluded_if=Type 1,dive,keys,method-name,endkeys,dive"`
+	Methods        map[string]ResourceMethod `validate:"dive,keys,method-name,endkeys,dive"`
 	ModelType      ModelTypeFunction         `validate:"required"`
 	Verbs          []ResourceVerb            `validate:"dive,verbs"`
 	SoftDelete     bool
