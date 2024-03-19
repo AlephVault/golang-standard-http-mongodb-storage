@@ -1,8 +1,8 @@
 package app
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log/slog"
@@ -11,7 +11,7 @@ import (
 )
 
 func registerEndpoints(
-	client *mongo.Client, router *gin.Engine, key string,
+	client *mongo.Client, router *echo.Echo, key string,
 	resource *dsl.Resource, auth *dsl.Auth, resourcesValidatorMaker func() *validator.Validate,
 	listMaxResults int64, logger *slog.Logger,
 ) {
@@ -25,7 +25,7 @@ func registerEndpoints(
 }
 
 func registerSimpleResourceEndpoints(
-	client *mongo.Client, router *gin.Engine, key string,
+	client *mongo.Client, router *echo.Echo, key string,
 	resource *dsl.Resource, auth *dsl.Auth, validatorMaker func() *validator.Validate,
 	logger *slog.Logger,
 ) {
@@ -58,59 +58,59 @@ func registerSimpleResourceEndpoints(
 	for _, verb := range verbs {
 		switch verb {
 		case dsl.CreateVerb:
-			router.POST("/"+key, func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "write") {
-					return
+			router.POST("/"+key, func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "write"); err != nil {
+					return err
 				}
-				simpleCreate(context, createOne, getOne, make_, validatorMaker, logger)
+				return simpleCreate(context, createOne, getOne, make_, validatorMaker, logger)
 			})
 		case dsl.ReadVerb:
-			router.GET("/"+key, func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "read") {
-					return
+			router.GET("/"+key, func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "read"); err != nil {
+					return err
 				}
-				simpleGet(context, getOne, logger)
+				return simpleGet(context, getOne, logger)
 			})
 		case dsl.UpdateVerb:
-			router.PATCH("/"+key, func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "write") {
-					return
+			router.PATCH("/"+key, func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "write"); err != nil {
+					return err
 				}
-				simpleUpdate(context, getOne, idGetter, replaceOne, makeMap, simulatedUpdate, validatorMaker, logger)
+				return simpleUpdate(context, getOne, idGetter, replaceOne, makeMap, simulatedUpdate, validatorMaker, logger)
 			})
 		case dsl.ReplaceVerb:
-			router.PUT("/"+key, func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "write") {
-					return
+			router.PUT("/"+key, func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "write"); err != nil {
+					return err
 				}
-				simpleReplace(context, replaceOne, make_, validatorMaker, logger)
+				return simpleReplace(context, replaceOne, make_, validatorMaker, logger)
 			})
 		case dsl.DeleteVerb:
-			router.DELETE("/"+key, func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "delete") {
-					return
+			router.DELETE("/"+key, func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "delete"); err != nil {
+					return err
 				}
-				simpleDelete(context, deleteOne, logger)
+				return simpleDelete(context, deleteOne, logger)
 			})
 		default:
 			slog.Info("Ignoring an unknown verb", "verb", verb)
 		}
 	}
 
-	router.GET("/"+key+"/:method", func(context *gin.Context) {
-		if !authenticate(context, authCollection, key, "read") {
-			return
+	router.GET("/"+key+"/:method", func(context echo.Context) error {
+		if err := authenticate(context, authCollection, key, "read"); err != nil {
+			return err
 		}
-		resourceMethod(
+		return resourceMethod(
 			context, collection, filter, key, dsl.View, context.Param("method"), methods, client,
 			validatorMaker, logger,
 		)
 	})
-	router.POST("/"+key+"/:method", func(context *gin.Context) {
-		if !authenticate(context, authCollection, key, "write") {
-			return
+	router.POST("/"+key+"/:method", func(context echo.Context) error {
+		if err := authenticate(context, authCollection, key, "write"); err != nil {
+			return nil
 		}
-		resourceMethod(
+		return resourceMethod(
 			context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
 			validatorMaker, logger,
 		)
@@ -118,7 +118,7 @@ func registerSimpleResourceEndpoints(
 }
 
 func registerListResourceEndpoints(
-	client *mongo.Client, router *gin.Engine, key string,
+	client *mongo.Client, router *echo.Echo, key string,
 	resource *dsl.Resource, auth *dsl.Auth, validatorMaker func() *validator.Validate,
 	listMaxResults int64, logger *slog.Logger,
 ) {
@@ -155,66 +155,65 @@ func registerListResourceEndpoints(
 	for _, verb := range verbs {
 		switch verb {
 		case dsl.CreateVerb:
-			router.GET("/"+key, func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "read") {
-					return
+			router.GET("/"+key, func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "read"); err != nil {
+					return nil
 				}
-				listCreate(context, createOne, make_, validatorMaker, logger)
+				return listCreate(context, createOne, make_, validatorMaker, logger)
 			})
 		case dsl.ListVerb:
-			router.POST("/"+key, func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "write") {
-					return
+			router.POST("/"+key, func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "write"); err != nil {
+					return nil
 				}
-				listGet(context, getMany, listMaxResults, logger)
+				return listGet(context, getMany, listMaxResults, logger)
 			})
 		case dsl.ReadVerb:
 			itemReadDefined = true
-			router.GET("/"+key+"/:id_or_method", func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "read") {
-					return
+			router.GET("/"+key+"/:id_or_method", func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "read"); err != nil {
+					return err
 				}
 				if id, ok := checkId(context, "id_or_method", true); ok {
-					listItemGet(context, getOne, id, logger)
-					return
+					return listItemGet(context, getOne, id, logger)
 				} else {
-					resourceMethod(
+					return resourceMethod(
 						context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
 						validatorMaker, logger,
 					)
 				}
 			})
 		case dsl.UpdateVerb:
-			router.PATCH("/"+key+"/:id", func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "write") {
-					return
+			router.PATCH("/"+key+"/:id", func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "write"); err != nil {
+					return err
 				}
 				if id, ok := checkId(context, "id", true); !ok {
-					responses.NotFound(context)
+					return responses.NotFound(context)
 				} else {
-					listItemUpdate(context, getOne, replaceOne, makeMap, id, simulatedUpdate, validatorMaker, logger)
+					return listItemUpdate(context, getOne, replaceOne, makeMap, id, simulatedUpdate, validatorMaker, logger)
 				}
 			})
 		case dsl.ReplaceVerb:
-			router.PUT("/"+key+"/:id", func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "write") {
-					return
+			router.PUT("/"+key+"/:id", func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "write"); err != nil {
+					return err
 				}
 				if id, ok := checkId(context, "id", true); !ok {
-					responses.NotFound(context)
+					return responses.NotFound(context)
 				} else {
-					listItemReplace(context, replaceOne, make_, id, validatorMaker, logger)
+					return listItemReplace(context, replaceOne, make_, id, validatorMaker, logger)
 				}
 			})
 		case dsl.DeleteVerb:
-			router.DELETE("/"+key+"/:id", func(context *gin.Context) {
-				if !authenticate(context, authCollection, key, "delete") {
-					return
+			router.DELETE("/"+key+"/:id", func(context echo.Context) error {
+				if err := authenticate(context, authCollection, key, "delete"); err != nil {
+					return err
 				}
 				if id, ok := checkId(context, "id", true); !ok {
-					responses.NotFound(context)
+					return responses.NotFound(context)
 				} else {
-					listItemDelete(context, deleteOne, id, logger)
+					return listItemDelete(context, deleteOne, id, logger)
 				}
 			})
 		default:
@@ -223,47 +222,47 @@ func registerListResourceEndpoints(
 	}
 
 	if !itemReadDefined {
-		router.GET("/"+key+"/:method", func(context *gin.Context) {
-			if !authenticate(context, authCollection, key, "read") {
-				return
+		router.GET("/"+key+"/:method", func(context echo.Context) error {
+			if err := authenticate(context, authCollection, key, "read"); err != nil {
+				return err
 			}
-			resourceMethod(
+			return resourceMethod(
 				context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
 				validatorMaker, logger,
 			)
 		})
 	}
 
-	router.POST("/"+key+"/:method", func(context *gin.Context) {
-		if !authenticate(context, authCollection, key, "write") {
-			return
+	router.POST("/"+key+"/:method", func(context echo.Context) error {
+		if err := authenticate(context, authCollection, key, "write"); err != nil {
+			return err
 		}
-		resourceMethod(
+		return resourceMethod(
 			context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
 			validatorMaker, logger,
 		)
 	})
-	router.GET("/"+key+"/:id/:method", func(context *gin.Context) {
-		if !authenticate(context, authCollection, key, "read") {
-			return
+	router.GET("/"+key+"/:id/:method", func(context echo.Context) error {
+		if err := authenticate(context, authCollection, key, "read"); err != nil {
+			return err
 		}
 		if id, ok := checkId(context, "id", true); !ok {
-			responses.NotFound(context)
+			return responses.NotFound(context)
 		} else {
-			itemMethod(
+			return itemMethod(
 				context, collection, filter, key, dsl.View, id, context.Param("method"), itemMethods, client,
 				validatorMaker, logger,
 			)
 		}
 	})
-	router.POST("/"+key+"/:id/:method", func(context *gin.Context) {
-		if !authenticate(context, authCollection, key, "write") {
-			return
+	router.POST("/"+key+"/:id/:method", func(context echo.Context) error {
+		if err := authenticate(context, authCollection, key, "write"); err != nil {
+			return err
 		}
 		if id, ok := checkId(context, "id", true); !ok {
-			responses.NotFound(context)
+			return responses.NotFound(context)
 		} else {
-			itemMethod(
+			return itemMethod(
 				context, collection, filter, key, dsl.Operation, id, context.Param("method"), itemMethods, client,
 				validatorMaker, logger,
 			)

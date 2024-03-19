@@ -2,8 +2,8 @@ package universe
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -35,60 +35,54 @@ type SetMotdBody struct {
 
 // SetMotd changes the current motd of the universe.
 func SetMotd(
-	context *gin.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
+	context echo.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
 	validatorMaker func() *validator.Validate, filter bson.M,
-) {
+) (err error) {
 	defer func() {
 		if v := recover(); v != nil {
-			responses.UnexpectedFormat(context)
+			err = responses.UnexpectedFormat(context)
 		}
 	}()
 
-	if strings.Contains(strings.ToLower(context.GetHeader("Content-Type")), "application/json") {
-		responses.UnexpectedFormat(context)
-		return
+	if strings.Contains(strings.ToLower(context.Request().Header.Get("Content-Type")), "application/json") {
+		return responses.UnexpectedFormat(context)
 	}
 
 	body := SetMotdBody{}
-	if err := context.ShouldBindJSON(&body); err != nil {
-		responses.UnexpectedFormat(context)
-		return
+	if err := (&echo.DefaultBinder{}).BindBody(context, &body); err != nil {
+		return responses.UnexpectedFormat(context)
 	} else if err := core.SampleValidator.Struct(&body); err != nil {
-		responses.InvalidFormat(context, err.(validator.ValidationErrors))
-		return
+		return responses.InvalidFormat(context, err.(validator.ValidationErrors))
 	}
 
 	if result, err := collection.UpdateOne(
-		context, filter, bson.M{"$set": bson.M{"motd": body.Motd}},
+		context.Request().Context(), filter, bson.M{"$set": bson.M{"motd": body.Motd}},
 	); err != nil {
-		responses.InternalError(context)
-		return
+		return responses.InternalError(context)
 	} else if result.ModifiedCount == 1 {
-		responses.Ok(context)
+		return responses.Ok(context)
 	} else {
-		responses.NotFound(context)
+		return responses.NotFound(context)
 	}
 }
 
 // GetVersion is a handler that returns the current version.
 func GetVersion(
-	context *gin.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
+	context echo.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
 	validatorMaker func() *validator.Validate, filter bson.M,
-) {
-	if result := collection.FindOne(context, filter); result != nil && result.Err() == nil {
+) error {
+	if result := collection.FindOne(context.Request().Context(), filter); result != nil && result.Err() == nil {
 		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
-			responses.NotFound(context)
+			return responses.NotFound(context)
 		} else {
-			responses.InternalError(context)
+			return responses.InternalError(context)
 		}
-		return
 	} else {
 		universe := Universe{}
 		if err := result.Decode(&universe); err != nil {
-			responses.InternalError(context)
-			return
+			return responses.InternalError(context)
 		} else {
-			responses.OkWith(context, universe.Version)
+			return responses.OkWith(context, universe.Version)
 		}
 	}
 }

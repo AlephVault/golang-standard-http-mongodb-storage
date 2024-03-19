@@ -2,7 +2,7 @@ package app
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,11 +24,11 @@ func checkPermission(permission string, existingPermissions []any) bool {
 }
 
 // checkId ensures the :id is valid.
-func checkId(ctx *gin.Context, arg string, raiseNotFoundOnError bool) (primitive.ObjectID, bool) {
+func checkId(ctx echo.Context, arg string, raiseNotFoundOnError bool) (primitive.ObjectID, bool) {
 	idParam := ctx.Param(arg)
 	if id, err := primitive.ObjectIDFromHex(idParam); err != nil {
 		if raiseNotFoundOnError {
-			responses.NotFound(ctx)
+			_ = responses.NotFound(ctx)
 		}
 		return primitive.NilObjectID, false
 	} else {
@@ -37,29 +37,25 @@ func checkId(ctx *gin.Context, arg string, raiseNotFoundOnError bool) (primitive
 }
 
 // authenticate performs an authentication and permissions check.
-func authenticate(ctx *gin.Context, collection *mongo.Collection, key, permission string) bool {
-	token := ctx.GetHeader("Authorization")
+func authenticate(ctx echo.Context, collection *mongo.Collection, key, permission string) error {
+	token := ctx.Request().Header.Get("Authorization")
 	if token == "" {
-		responses.AuthMissing(ctx)
-		return false
+		return responses.AuthMissing(ctx)
 	}
 	if !strings.HasPrefix(token, "Bearer ") {
-		responses.AuthBadScheme(ctx)
-		return false
+		return responses.AuthBadScheme(ctx)
 	}
 
 	token = token[7:]
 	var tokenRecord auth.AuthToken
-	if result := collection.FindOne(ctx, bson.M{
+	if result := collection.FindOne(ctx.Request().Context(), bson.M{
 		"api-key": token, "valid_until": bson.M{
 			"$not": bson.M{"$lt": time.Now()},
 		},
 	}); result.Err() != nil {
-		responses.AuthNotFound(ctx)
-		return false
+		return responses.AuthNotFound(ctx)
 	} else if err := result.Decode(&tokenRecord); err != nil {
-		responses.InternalError(ctx)
-		return false
+		return responses.InternalError(ctx)
 	}
 
 	hasPermission := false
@@ -76,11 +72,10 @@ func authenticate(ctx *gin.Context, collection *mongo.Collection, key, permissio
 		}
 	}
 	if !hasPermission {
-		responses.AuthForbidden(ctx)
-		return false
+		return responses.AuthForbidden(ctx)
 	}
 
-	return true
+	return nil
 }
 
 var rxDuplicateError = regexp.MustCompile(`E11000|E11001|E12582|16460`)

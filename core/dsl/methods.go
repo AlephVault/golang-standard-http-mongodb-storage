@@ -1,8 +1,8 @@
 package dsl
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,9 +21,9 @@ const (
 // collection. For simple resources, this will imply the only
 // record existing in it.
 type ResourceMethodHandler func(
-	context *gin.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
+	context echo.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
 	validatorMaker func() *validator.Validate, filter bson.M,
-)
+) error
 
 // ResourceMethod stands for a method entry which involves a handler and
 // also telling whether it is a view or an operator. This handler is
@@ -36,9 +36,9 @@ type ResourceMethod struct {
 // ItemMethodHandler is a method that handles a specific collection
 // and some filtering data, now related to an item in particular.
 type ItemMethodHandler func(
-	context *gin.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
+	context echo.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
 	validatorMaker func() *validator.Validate, filter bson.M, id primitive.ObjectID,
-)
+) error
 
 // ItemMethod stands for a method entry which involves a handler and
 // also telling whether it is a view or an operator. This handler is

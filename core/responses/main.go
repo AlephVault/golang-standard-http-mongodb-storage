@@ -1,102 +1,102 @@
 package responses
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 )
 
 // AuthMissing dumps a simple "missing header" message
 // response (401) in the gin context.
-func AuthMissing(c *gin.Context) {
-	c.JSON(http.StatusUnauthorized, gin.H{
+func AuthMissing(c echo.Context) error {
+	return c.JSON(http.StatusUnauthorized, echo.Map{
 		"code": "authorization:missing-header",
 	})
 }
 
 // AuthBadScheme dumps a simple "bad scheme" message
 // response (400) in the gin context.
-func AuthBadScheme(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{
+func AuthBadScheme(c echo.Context) error {
+	return c.JSON(http.StatusBadRequest, echo.Map{
 		"code": "authorization:bad-scheme",
 	})
 }
 
 // AuthSyntaxError dumps a simple "syntax error" message
 // response (400) in the gin context.
-func AuthSyntaxError(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{
+func AuthSyntaxError(c echo.Context) error {
+	return c.JSON(http.StatusBadRequest, echo.Map{
 		"code": "authorization:syntax-error",
 	})
 }
 
 // AuthNotFound dumps a simple "not found" message
 // response (401, for auth) in the gin context.
-func AuthNotFound(c *gin.Context) {
-	c.JSON(http.StatusUnauthorized, gin.H{
+func AuthNotFound(c echo.Context) error {
+	return c.JSON(http.StatusUnauthorized, echo.Map{
 		"code": "authorization:not-found",
 	})
 }
 
 // AuthForbidden dumps a simple "forbidden" message
 // response (403) in the gin context.
-func AuthForbidden(c *gin.Context) {
-	c.JSON(http.StatusForbidden, gin.H{
+func AuthForbidden(c echo.Context) error {
+	return c.JSON(http.StatusForbidden, echo.Map{
 		"code": "authorization:forbidden",
 	})
 }
 
 // NotFound dumps a simple "not found" message
 // response (404) in the gin context.
-func NotFound(c *gin.Context) {
-	c.JSON(http.StatusNotFound, gin.H{
+func NotFound(c echo.Context) error {
+	return c.JSON(http.StatusNotFound, echo.Map{
 		"code": "not-found",
 	})
 }
 
 // MethodNotAllowed dumps a simple "method not allowed"
 // message response (405) in the gin context.
-func MethodNotAllowed(c *gin.Context) {
-	c.JSON(http.StatusMethodNotAllowed, gin.H{
+func MethodNotAllowed(c echo.Context) error {
+	return c.JSON(http.StatusMethodNotAllowed, echo.Map{
 		"code": "method-not-allowed",
 	})
 }
 
 // InternalError dumps a simple "internal error"
 // message response (500) in the gin context.
-func InternalError(c *gin.Context) {
-	c.JSON(http.StatusInternalServerError, gin.H{
+func InternalError(c echo.Context) error {
+	return c.JSON(http.StatusInternalServerError, echo.Map{
 		"code": "internal-error",
 	})
 }
 
 // OkWith dumps a 200 message with a given body.
-// Most likely, the body will be a gin.H instance.
-func OkWith(c *gin.Context, value any) {
-	c.JSON(http.StatusOK, value)
+// Most likely, the body will be a echo.Map instance.
+func OkWith(c echo.Context, value any) error {
+	return c.JSON(http.StatusOK, value)
 }
 
 // Ok dumps a simple "ok" message response (200)
 // in the gin context
-func Ok(c *gin.Context) {
-	OkWith(c, gin.H{
+func Ok(c echo.Context) error {
+	return OkWith(c, echo.Map{
 		"code": "ok",
 	})
 }
 
 // Created dumps a simple "created" message with the
 // id of the created object.
-func Created(c *gin.Context, id primitive.ObjectID) {
-	c.JSON(http.StatusCreated, gin.H{
+func Created(c echo.Context, id primitive.ObjectID) error {
+	return c.JSON(http.StatusCreated, echo.Map{
 		"id": id,
 	})
 }
 
 // UnexpectedFormat dumps a simple "unexpected format"
 // message response (400) in the gin context.
-func UnexpectedFormat(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{
+func UnexpectedFormat(c echo.Context) error {
+	return c.JSON(http.StatusBadRequest, echo.Map{
 		"code": "format:unexpected",
 	})
 }
@@ -104,12 +104,12 @@ func UnexpectedFormat(c *gin.Context) {
 // InvalidFormat dumps an "invalid format" message
 // response (400) in the gin context, with the errors
 // that must flow to the user.
-func InvalidFormat(c *gin.Context, errors validator.ValidationErrors) {
+func InvalidFormat(c echo.Context, errors validator.ValidationErrors) error {
 	errorMessages := make([]string, len(errors))
 	for index, value := range errors {
 		errorMessages[index] = value.Error()
 	}
-	c.JSON(http.StatusBadRequest, gin.H{
+	return c.JSON(http.StatusBadRequest, echo.Map{
 		"code":   "format:invalid",
 		"errors": errors,
 	})
@@ -117,16 +117,16 @@ func InvalidFormat(c *gin.Context, errors validator.ValidationErrors) {
 
 // AlreadyExists dumps a simple "already exists" message
 // response (409) in the gin context.
-func AlreadyExists(c *gin.Context) {
-	c.JSON(http.StatusConflict, gin.H{
+func AlreadyExists(c echo.Context) error {
+	return c.JSON(http.StatusConflict, echo.Map{
 		"code": "already-exists",
 	})
 }
 
 // DuplicateKey dumps a "duplicate key" message response
 // (409) with the attempted key combination.
-func DuplicateKey(c *gin.Context) {
-	c.JSON(http.StatusConflict, gin.H{
+func DuplicateKey(c echo.Context) error {
+	return c.JSON(http.StatusConflict, echo.Map{
 		"code": "duplicate-key",
 	})
 }

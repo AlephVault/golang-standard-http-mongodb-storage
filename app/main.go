@@ -1,15 +1,13 @@
 package app
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -30,41 +28,28 @@ func (panicked *Panicked) Error() string {
 	return fmt.Sprintf("Panicked with: %v", panicked.With)
 }
 
-type customResponseWriter struct {
-	gin.ResponseWriter
-	body *bytes.Buffer
-}
+func wrapStatus(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		err := next(c)
 
-func (w *customResponseWriter) Write(b []byte) (int, error) {
-	w.body.Write(b)
-	return w.ResponseWriter.Write(b)
-}
-
-func wrapStatus(c *gin.Context) {
-	buff := new(bytes.Buffer)
-	c.Writer = &customResponseWriter{body: buff, ResponseWriter: c.Writer}
-
-	c.Next()
-
-	// After request handler execution
-	if !strings.Contains(c.Writer.Header().Get("Content-Type"), "application/json") {
-		switch c.Writer.Status() {
-		case http.StatusNotFound:
-			c.Abort()
-			responses.NotFound(c)
-		case http.StatusInternalServerError:
-			c.Abort()
-			responses.InternalError(c)
-		case http.StatusMethodNotAllowed:
-			c.Abort()
-			responses.MethodNotAllowed(c)
-		case http.StatusForbidden:
-			c.Abort()
-			responses.AuthForbidden(c)
-		case http.StatusUnauthorized:
-			c.Abort()
-			responses.AuthNotFound(c)
+		// After request handler execution
+		if !strings.Contains(c.Response().Header().Get("Content-Type"), "application/json") {
+			switch c.Response().Status {
+			case http.StatusNotFound:
+				return responses.NotFound(c)
+			case http.StatusInternalServerError:
+				return responses.InternalError(c)
+			case http.StatusMethodNotAllowed:
+				return responses.MethodNotAllowed(c)
+			case http.StatusForbidden:
+				return responses.AuthForbidden(c)
+			case http.StatusUnauthorized:
+				return responses.AuthNotFound(c)
+			}
 		}
+
+		// Otherwise, return whatever was returned.
+		return err
 	}
 }
 
@@ -123,14 +108,8 @@ func MakeServer(
 
 	// Create the router.
 	slog.Info("Init::Starting the router")
-	router := gin.New()
-	router.Use(gin.Logger(), gin.CustomRecovery(func(c *gin.Context, err any) {
-		if err != nil {
-			log.Printf("panic recovered: %v", err)
-		}
-		c.Abort()
-		responses.InternalError(c)
-	}), wrapStatus)
+	router := echo.New()
+	router.Use(wrapStatus)
 
 	// Configure the endpoints.
 	slog.Info("Init::Defining the resources")
