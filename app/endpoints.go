@@ -55,7 +55,7 @@ func registerSimpleResourceEndpoints(
 		}
 	}
 
-	for _, verb := range resource.Verbs {
+	for _, verb := range verbs {
 		switch verb {
 		case dsl.CreateVerb:
 			router.POST("/"+key, func(context *gin.Context) {
