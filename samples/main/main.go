@@ -53,3 +53,7 @@ func LaunchServer() {
 		panic(application.Run("0.0.0.0:8888"))
 	}
 }
+
+func main() {
+	LaunchServer()
+}
