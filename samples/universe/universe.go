@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"standard-http-mongodb-storage/core/dsl"
 	"standard-http-mongodb-storage/core/responses"
@@ -21,9 +22,10 @@ type UniverseVersion struct {
 
 // Universe is a sample singleton for the whole game layout.
 type Universe struct {
-	Caption string          `validate:"required,gt=0" bson:"caption" json:"caption"`
-	Motd    string          `validate:"required,gt=0" bson:"motd" json:"motd"`
-	Version UniverseVersion `validate:"dive" bson:"version" json:"version"`
+	ID      primitive.ObjectID `bson:"_id"`
+	Caption string             `validate:"required,gt=0" bson:"caption" json:"caption"`
+	Motd    string             `validate:"required,gt=0" bson:"motd" json:"motd"`
+	Version UniverseVersion    `validate:"dive" bson:"version" json:"version"`
 }
 
 // SetMotdBody stands for the body for a "set-motd" method.
@@ -101,7 +103,7 @@ var (
 		SoftDelete: true,
 		ModelType:  dsl.ModelType[Universe],
 		// Projection: bson.D{{"foo", "bar"}},
-		ItemProjection: bson.D{{"caption", 1}, {"motd", 1}},
+		Projection: bson.D{{"caption", 1}, {"motd", 1}},
 		Methods: map[string]dsl.ResourceMethod{
 			"set-motd": {
 				Type:    dsl.Operation,
