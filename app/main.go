@@ -80,18 +80,24 @@ func MakeServer(
 			app, err = nil, &Panicked{v}
 		}
 	}()
+
+	slog.Info("Init::Preparing settings")
 	settings.Prepare()
 
 	// Attempt a connection and get the client. Also, prepare
 	// the indices (if any is configured).
+	slog.Info("Init::Making MongoDB connection")
 	var client *mongo.Client
 	if client, err = settings.Connection.Connect(); err != nil {
 		return
-	} else if err = prepareIndices(client, settings); err != nil {
+	}
+	slog.Info("Init::Preparing database indices")
+	if err = prepareIndices(client, settings); err != nil {
 		return
 	}
 
 	// Make the validator to use and validate the settings.
+	slog.Info("Init::Validating the settings")
 	if settings.Global.ListMaxResults <= 0 {
 		settings.Global.ListMaxResults = dsl.DefaultListMaxSize
 	}
@@ -116,6 +122,7 @@ func MakeServer(
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	// Create the router.
+	slog.Info("Init::Starting the router")
 	router := gin.New()
 	router.Use(gin.Logger(), gin.CustomRecovery(func(c *gin.Context, err any) {
 		if err != nil {
@@ -126,6 +133,7 @@ func MakeServer(
 	}), wrapStatus)
 
 	// Configure the endpoints.
+	slog.Info("Init::Defining the resources")
 	for resourceKey, resource := range settings.Resources {
 		registerEndpoints(
 			client, router, resourceKey, &resource, &settings.Auth, resourcesValidatorMaker,
@@ -134,6 +142,7 @@ func MakeServer(
 	}
 
 	// Create the final application object.
+	slog.Info("Init::Defining the application and applying initial setup")
 	app = &Application{
 		router: router,
 	}
@@ -148,10 +157,12 @@ func MakeServer(
 
 func prepareIndices(client *mongo.Client, settings *dsl.Settings) (err error) {
 	bg := context.Background()
+	slog.Info("Init/Indices::Getting the indices collection")
 	authIndices := client.Database(settings.Auth.Db).Collection(settings.Auth.Collection).Indexes()
 	name := "api-key"
 	sparse := true
 	unique := true
+	slog.Info(fmt.Sprintf("Init/Indices::Creating indices for auth db=%s table=%s", settings.Auth.Db, settings.Auth.Collection))
 	if _, err = authIndices.CreateOne(
 		bg, mongo.IndexModel{
 			Keys: bson.M{"api-key": 1}, // 1=Ascending.
