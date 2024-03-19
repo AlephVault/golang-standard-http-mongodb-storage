@@ -32,7 +32,10 @@ type SetMotdBody struct {
 }
 
 // SetMotd changes the current motd of the universe.
-func SetMotd(context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M) {
+func SetMotd(
+	context *gin.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
+	validatorMaker func() *validator.Validate, filter bson.M,
+) {
 	defer func() {
 		if v := recover(); v != nil {
 			responses.UnexpectedFormat(context)
@@ -53,7 +56,7 @@ func SetMotd(context *gin.Context, client *mongo.Client, resource, method, db, c
 		return
 	}
 
-	if result, err := client.Database(db).Collection(collection).UpdateOne(
+	if result, err := collection.UpdateOne(
 		context, filter, bson.M{"$set": bson.M{"motd": body.Motd}},
 	); err != nil {
 		responses.InternalError(context)
@@ -66,8 +69,11 @@ func SetMotd(context *gin.Context, client *mongo.Client, resource, method, db, c
 }
 
 // GetVersion is a handler that returns the current version.
-func GetVersion(context *gin.Context, client *mongo.Client, resource, method, db, collection string, filter bson.M) {
-	if result := client.Database(db).Collection(collection).FindOne(context, filter); result != nil && result.Err() == nil {
+func GetVersion(
+	context *gin.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
+	validatorMaker func() *validator.Validate, filter bson.M,
+) {
+	if result := collection.FindOne(context, filter); result != nil && result.Err() == nil {
 		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
 			responses.NotFound(context)
 		} else {
@@ -96,7 +102,7 @@ var (
 		ModelType:  dsl.ModelType[Universe],
 		// Projection: bson.D{{"foo", "bar"}},
 		ItemProjection: bson.D{{"caption", 1}, {"motd", 1}},
-		ItemMethods: map[string]dsl.ItemMethod{
+		Methods: map[string]dsl.ResourceMethod{
 			"set-motd": {
 				Type:    dsl.Operation,
 				Handler: SetMotd,
