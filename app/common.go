@@ -60,13 +60,13 @@ func authenticate(ctx echo.Context, collection *mongo.Collection, key, permissio
 
 	hasPermission := false
 	if globalPermissions, ok := tokenRecord.Permissions["*"]; ok {
-		if globalPermissionsArray, ok := globalPermissions.([]any); ok {
+		if globalPermissionsArray, ok := globalPermissions.(primitive.A); ok {
 			hasPermission = checkPermission(permission, globalPermissionsArray)
 		}
 	}
 	if !hasPermission {
 		if localPermissions, ok := tokenRecord.Permissions[key]; ok {
-			if localPermissionsArray, ok := localPermissions.([]any); ok {
+			if localPermissionsArray, ok := localPermissions.(primitive.A); ok {
 				hasPermission = checkPermission(permission, localPermissionsArray)
 			}
 		}
