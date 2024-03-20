@@ -22,7 +22,7 @@ var (
 		},
 		SoftDelete: true,
 		ModelType:  dsl.ModelType[Payment],
-		// Projection: bson.D{{"foo", "bar"}},
-		ItemProjection: bson.D{{"from", 1}, {"amount", 1}, {"when", 1}},
+		// Projection: bson.M{"foo": "bar"},
+		ItemProjection: bson.M{"from": 1, "amount": 1, "when": 1},
 	}
 )

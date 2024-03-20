@@ -45,8 +45,8 @@ type Resource struct {
 	Type           ResourceType `validate:"min=0,max=1"`
 	Sort           bson.D
 	Filter         bson.M
-	ItemProjection bson.D `validate:"excluded_if=Type 1"`
-	Projection     bson.D
+	ItemProjection bson.M `validate:"excluded_if=Type 1"`
+	Projection     bson.M
 	ItemMethods    map[string]ItemMethod     `validate:"excluded_if=Type 1,dive,keys,method-name,endkeys,dive"`
 	Methods        map[string]ResourceMethod `validate:"dive,keys,method-name,endkeys,dive"`
 	ModelType      ModelTypeFunction         `validate:"required"`

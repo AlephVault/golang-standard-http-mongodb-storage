@@ -70,7 +70,7 @@ func makeCreateOne(
 // makeGetMany
 func makeGetMany(
 	collection *mongo.Collection, make func() any, softDelete bool,
-	filter bson.M, projection any, sort any,
+	filter bson.M, projection bson.M, sort bson.D,
 ) GetManyFunc {
 	return func(ctx echo.Context, page int64, pageSize int64) ([]any, error) {
 		var err error
@@ -113,7 +113,7 @@ func makeGetMany(
 // makeGetOne makes a function that returns a single element. Returns a new element.
 func makeGetOne(
 	collection *mongo.Collection, make func() any, softDelete bool,
-	filter bson.M, projection any, sort any,
+	filter bson.M, projection bson.M, sort bson.D,
 ) GetOneFunc {
 	return func(ctx echo.Context, id primitive.ObjectID) (any, error) {
 		var err error
@@ -125,10 +125,16 @@ func makeGetOne(
 		}
 
 		// Try getting an element.
-		result := collection.FindOne(
-			ctx.Request().Context(), filter_,
-			options.FindOne().SetProjection(projection).SetSort(sort),
-		)
+		options_ := options.FindOne()
+		if len(projection) != 0 {
+			options_.SetProjection(projection)
+		}
+		if len(sort) != 0 {
+			options_.SetSort(sort)
+		}
+
+		result := collection.FindOne(ctx.Request().Context(), filter_, options_)
+
 		err = result.Err()
 		if err != nil {
 			return nil, err
