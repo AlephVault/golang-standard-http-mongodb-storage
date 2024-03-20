@@ -2,7 +2,6 @@ package app
 
 import (
 	"errors"
-	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
@@ -63,6 +62,7 @@ func simpleCreate(
 		} else if isDuplicateKeyError(err) {
 			return responses.DuplicateKey(ctx)
 		} else {
+			logger.Error("An error occurred: " + err.Error())
 			return responses.InternalError(ctx)
 		}
 	} else {
@@ -79,6 +79,7 @@ func simpleGet(
 	} else if errors.Is(err, mongo.ErrNoDocuments) {
 		return responses.NotFound(ctx)
 	} else {
+		logger.Error("An error occurred: " + err.Error())
 		return responses.InternalError(ctx)
 	}
 }
@@ -88,6 +89,7 @@ func simpleDelete(
 	ctx echo.Context, deleteOne DeleteOneFunc, logger *slog.Logger,
 ) error {
 	if deleted, err := deleteOne(ctx, primitive.NilObjectID); err != nil {
+		logger.Error("An error occurred: " + err.Error())
 		return responses.InternalError(ctx)
 	} else if !deleted {
 		return responses.NotFound(ctx)
@@ -105,10 +107,12 @@ func simpleUpdate(
 		if updates, success, err := readJSONBody(ctx, makeMap, nil); success {
 			id := idGetter(element)
 			if result, err := simulatedUpdate(ctx, id, element, updates); err != nil {
+				logger.Error("An error occurred: " + err.Error())
 				return responses.InternalError(ctx)
 			} else if result, err := validate(ctx, result, validatorMaker()); !result {
 				return err
 			} else if updated, err := replaceOne(ctx, id, result); err != nil {
+				logger.Error("An error occurred: " + err.Error())
 				return responses.InternalError(ctx)
 			} else if updated {
 				return responses.OkWith(ctx, result)
@@ -121,6 +125,7 @@ func simpleUpdate(
 	} else if errors.Is(err, mongo.ErrNoDocuments) {
 		return responses.NotFound(ctx)
 	} else {
+		logger.Error("An error occurred: " + err.Error())
 		return responses.InternalError(ctx)
 	}
 }
@@ -132,6 +137,7 @@ func simpleReplace(
 ) error {
 	if replacement, ok, err := readJSONBody(ctx, make_, validatorMaker()); ok {
 		if ok, err := replaceOne(ctx, primitive.NilObjectID, replacement); err != nil {
+			logger.Error("An error occurred: " + err.Error())
 			return responses.InternalError(ctx)
 		} else if !ok {
 			return responses.NotFound(ctx)
@@ -171,6 +177,7 @@ func listGet(
 	_ = echo.QueryParamsBinder(ctx).Int64("skip", &skip).Int64("limit", &limit)
 
 	if result, err := getMany(ctx, skip, limit); err != nil {
+		logger.Error("An error occurred: " + err.Error())
 		return responses.InternalError(ctx)
 	} else {
 		return responses.OkWith(ctx, result)
@@ -186,6 +193,7 @@ func listItemGet(
 	} else if errors.Is(err, mongo.ErrNoDocuments) {
 		return responses.NotFound(ctx)
 	} else {
+		logger.Error("An error occurred: " + err.Error())
 		return responses.InternalError(ctx)
 	}
 }
@@ -198,10 +206,12 @@ func listItemUpdate(
 	if element, err := getOne(ctx, id); err != nil {
 		if updates, success, err := readJSONBody(ctx, makeMap, nil); success {
 			if result, err := simulatedUpdate(ctx, id, element, updates); err != nil {
+				logger.Error("An error occurred: " + err.Error())
 				return responses.InternalError(ctx)
 			} else if result, err := validate(ctx, result, validatorMaker()); !result {
 				return err
 			} else if updated, err := replaceOne(ctx, id, result); err != nil {
+				logger.Error("An error occurred: " + err.Error())
 				return responses.InternalError(ctx)
 			} else if updated {
 				return responses.OkWith(ctx, result)
@@ -214,6 +224,7 @@ func listItemUpdate(
 	} else if errors.Is(err, mongo.ErrNoDocuments) {
 		return responses.NotFound(ctx)
 	} else {
+		logger.Error("An error occurred: " + err.Error())
 		return responses.InternalError(ctx)
 	}
 }
@@ -225,6 +236,7 @@ func listItemReplace(
 ) error {
 	if replacement, ok, err := readJSONBody(ctx, make_, validatorMaker()); ok {
 		if ok, err := replaceOne(ctx, id, replacement); err != nil {
+			logger.Error("An error occurred: " + err.Error())
 			return responses.InternalError(ctx)
 		} else if !ok {
 			return responses.NotFound(ctx)
@@ -241,6 +253,7 @@ func listItemDelete(
 	ctx echo.Context, deleteOne DeleteOneFunc, id primitive.ObjectID, logger *slog.Logger,
 ) error {
 	if deleted, err := deleteOne(ctx, id); err != nil {
+		logger.Error("An error occurred: " + err.Error())
 		return responses.InternalError(ctx)
 	} else if !deleted {
 		return responses.NotFound(ctx)
@@ -264,7 +277,7 @@ func resourceMethod(
 	} else {
 		defer func() {
 			if v := recover(); v != nil {
-				slog.Error(fmt.Sprintf("Panic! %v", v))
+				logger.Error("An error occurred (it was panicked): " + err.Error())
 				err = responses.InternalError(ctx)
 			}
 		}()
@@ -290,7 +303,7 @@ func itemMethod(
 	} else {
 		defer func() {
 			if v := recover(); v != nil {
-				slog.Error(fmt.Sprintf("Panic! %v", v))
+				logger.Error("An error occurred (it was panicked): " + err.Error())
 				err = responses.InternalError(ctx)
 			}
 		}()
