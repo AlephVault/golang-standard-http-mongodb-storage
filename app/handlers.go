@@ -171,7 +171,7 @@ func listCreate(
 func listGet(
 	ctx echo.Context, getMany GetManyFunc, defaultLimit int64, logger *slog.Logger,
 ) error {
-	var skip, limit int64
+	var skip, limit int64 = 0, defaultLimit
 
 	// Get "skip" query parameter
 	_ = echo.QueryParamsBinder(ctx).Int64("skip", &skip).Int64("limit", &limit)
