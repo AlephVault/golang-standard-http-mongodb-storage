@@ -37,13 +37,13 @@ func checkId(ctx echo.Context, arg string, raiseNotFoundOnError bool) (primitive
 }
 
 // authenticate performs an authentication and permissions check.
-func authenticate(ctx echo.Context, collection *mongo.Collection, key, permission string) error {
+func authenticate(ctx echo.Context, collection *mongo.Collection, key, permission string) (bool, error) {
 	token := ctx.Request().Header.Get("Authorization")
 	if token == "" {
-		return responses.AuthMissing(ctx)
+		return false, responses.AuthMissing(ctx)
 	}
 	if !strings.HasPrefix(token, "Bearer ") {
-		return responses.AuthBadScheme(ctx)
+		return false, responses.AuthBadScheme(ctx)
 	}
 
 	token = token[7:]
@@ -53,9 +53,9 @@ func authenticate(ctx echo.Context, collection *mongo.Collection, key, permissio
 			"$not": bson.M{"$lt": time.Now()},
 		},
 	}); result.Err() != nil {
-		return responses.AuthNotFound(ctx)
+		return false, responses.AuthNotFound(ctx)
 	} else if err := result.Decode(&tokenRecord); err != nil {
-		return responses.InternalError(ctx)
+		return false, responses.InternalError(ctx)
 	}
 
 	hasPermission := false
@@ -72,10 +72,10 @@ func authenticate(ctx echo.Context, collection *mongo.Collection, key, permissio
 		}
 	}
 	if !hasPermission {
-		return responses.AuthForbidden(ctx)
+		return false, responses.AuthForbidden(ctx)
 	}
 
-	return nil
+	return true, nil
 }
 
 var rxDuplicateError = regexp.MustCompile(`E11000|E11001|E12582|16460`)

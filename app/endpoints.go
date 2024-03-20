@@ -59,35 +59,35 @@ func registerSimpleResourceEndpoints(
 		switch verb {
 		case dsl.CreateVerb:
 			router.POST("/"+key, func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "write"); err != nil {
+				if success, err := authenticate(context, authCollection, key, "write"); !success {
 					return err
 				}
 				return simpleCreate(context, createOne, getOne, make_, validatorMaker, logger)
 			})
 		case dsl.ReadVerb:
 			router.GET("/"+key, func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "read"); err != nil {
+				if success, err := authenticate(context, authCollection, key, "read"); !success {
 					return err
 				}
 				return simpleGet(context, getOne, logger)
 			})
 		case dsl.UpdateVerb:
 			router.PATCH("/"+key, func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "write"); err != nil {
+				if success, err := authenticate(context, authCollection, key, "write"); !success {
 					return err
 				}
 				return simpleUpdate(context, getOne, idGetter, replaceOne, makeMap, simulatedUpdate, validatorMaker, logger)
 			})
 		case dsl.ReplaceVerb:
 			router.PUT("/"+key, func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "write"); err != nil {
+				if success, err := authenticate(context, authCollection, key, "write"); !success {
 					return err
 				}
 				return simpleReplace(context, replaceOne, make_, validatorMaker, logger)
 			})
 		case dsl.DeleteVerb:
 			router.DELETE("/"+key, func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "delete"); err != nil {
+				if success, err := authenticate(context, authCollection, key, "delete"); !success {
 					return err
 				}
 				return simpleDelete(context, deleteOne, logger)
@@ -98,7 +98,7 @@ func registerSimpleResourceEndpoints(
 	}
 
 	router.GET("/"+key+"/:method", func(context echo.Context) error {
-		if err := authenticate(context, authCollection, key, "read"); err != nil {
+		if success, err := authenticate(context, authCollection, key, "read"); !success {
 			return err
 		}
 		return resourceMethod(
@@ -107,8 +107,8 @@ func registerSimpleResourceEndpoints(
 		)
 	})
 	router.POST("/"+key+"/:method", func(context echo.Context) error {
-		if err := authenticate(context, authCollection, key, "write"); err != nil {
-			return nil
+		if success, err := authenticate(context, authCollection, key, "write"); !success {
+			return err
 		}
 		return resourceMethod(
 			context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
@@ -156,22 +156,22 @@ func registerListResourceEndpoints(
 		switch verb {
 		case dsl.CreateVerb:
 			router.GET("/"+key, func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "read"); err != nil {
-					return nil
+				if success, err := authenticate(context, authCollection, key, "read"); !success {
+					return err
 				}
 				return listCreate(context, createOne, make_, validatorMaker, logger)
 			})
 		case dsl.ListVerb:
 			router.POST("/"+key, func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "write"); err != nil {
-					return nil
+				if success, err := authenticate(context, authCollection, key, "write"); !success {
+					return err
 				}
 				return listGet(context, getMany, listMaxResults, logger)
 			})
 		case dsl.ReadVerb:
 			itemReadDefined = true
 			router.GET("/"+key+"/:id_or_method", func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "read"); err != nil {
+				if success, err := authenticate(context, authCollection, key, "read"); !success {
 					return err
 				}
 				if id, ok := checkId(context, "id_or_method", true); ok {
@@ -185,7 +185,7 @@ func registerListResourceEndpoints(
 			})
 		case dsl.UpdateVerb:
 			router.PATCH("/"+key+"/:id", func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "write"); err != nil {
+				if success, err := authenticate(context, authCollection, key, "write"); !success {
 					return err
 				}
 				if id, ok := checkId(context, "id", true); !ok {
@@ -196,7 +196,7 @@ func registerListResourceEndpoints(
 			})
 		case dsl.ReplaceVerb:
 			router.PUT("/"+key+"/:id", func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "write"); err != nil {
+				if success, err := authenticate(context, authCollection, key, "write"); !success {
 					return err
 				}
 				if id, ok := checkId(context, "id", true); !ok {
@@ -207,7 +207,7 @@ func registerListResourceEndpoints(
 			})
 		case dsl.DeleteVerb:
 			router.DELETE("/"+key+"/:id", func(context echo.Context) error {
-				if err := authenticate(context, authCollection, key, "delete"); err != nil {
+				if success, err := authenticate(context, authCollection, key, "delete"); !success {
 					return err
 				}
 				if id, ok := checkId(context, "id", true); !ok {
@@ -223,7 +223,7 @@ func registerListResourceEndpoints(
 
 	if !itemReadDefined {
 		router.GET("/"+key+"/:method", func(context echo.Context) error {
-			if err := authenticate(context, authCollection, key, "read"); err != nil {
+			if success, err := authenticate(context, authCollection, key, "read"); !success {
 				return err
 			}
 			return resourceMethod(
@@ -234,7 +234,7 @@ func registerListResourceEndpoints(
 	}
 
 	router.POST("/"+key+"/:method", func(context echo.Context) error {
-		if err := authenticate(context, authCollection, key, "write"); err != nil {
+		if success, err := authenticate(context, authCollection, key, "write"); !success {
 			return err
 		}
 		return resourceMethod(
@@ -243,7 +243,7 @@ func registerListResourceEndpoints(
 		)
 	})
 	router.GET("/"+key+"/:id/:method", func(context echo.Context) error {
-		if err := authenticate(context, authCollection, key, "read"); err != nil {
+		if success, err := authenticate(context, authCollection, key, "read"); !success {
 			return err
 		}
 		if id, ok := checkId(context, "id", true); !ok {
@@ -256,7 +256,7 @@ func registerListResourceEndpoints(
 		}
 	})
 	router.POST("/"+key+"/:id/:method", func(context echo.Context) error {
-		if err := authenticate(context, authCollection, key, "write"); err != nil {
+		if success, err := authenticate(context, authCollection, key, "write"); !success {
 			return err
 		}
 		if id, ok := checkId(context, "id", true); !ok {
