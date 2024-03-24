@@ -3,7 +3,6 @@ package app
 import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log/slog"
 	"reflect"
@@ -38,11 +37,11 @@ func registerSimpleResourceEndpoints(
 	sort := resource.Sort
 	projection := resource.Projection
 	methods := resource.Methods
-	idGetter := makeIDGetter(resource.ModelType())
+	idGetter, idSetter := makeIDAccessors(resource.ModelType())
 
 	modelType_ := reflect.TypeOf(resource.ModelType())
 	make_ := func() any { return reflect.New(modelType_).Interface() }
-	makeMap := func() any { return &bson.M{} }
+	makeMap := func() any { return &echo.Map{} }
 
 	createOne := makeCreateOne(collection)
 	getOne := makeGetOne(collection, make_, softDelete, filter, projection, sort)
@@ -78,7 +77,9 @@ func registerSimpleResourceEndpoints(
 				if success, err := authenticate(context, authCollection, key, "write"); !success {
 					return err
 				}
-				return simpleUpdate(context, getOne, idGetter, replaceOne, makeMap, simulatedUpdate, validatorMaker, logger)
+				return simpleUpdate(
+					context, getOne, idGetter, idSetter, replaceOne, makeMap, simulatedUpdate, validatorMaker, logger,
+				)
 			})
 		case dsl.ReplaceVerb:
 			router.PUT("/"+key, func(context echo.Context) error {
@@ -134,10 +135,11 @@ func registerListResourceEndpoints(
 	itemProjection := resource.ItemProjection
 	methods := resource.Methods
 	itemMethods := resource.ItemMethods
+	_, idSetter := makeIDAccessors(resource.ModelType())
 
 	modelType_ := reflect.TypeOf(resource.ModelType())
 	make_ := func() any { return reflect.New(modelType_).Interface() }
-	makeMap := func() any { return make(bson.M) }
+	makeMap := func() any { return &echo.Map{} }
 
 	createOne := makeCreateOne(collection)
 	getMany := makeGetMany(collection, make_, softDelete, filter, projection, sort)
@@ -194,7 +196,9 @@ func registerListResourceEndpoints(
 				if id, ok := checkId(context, "id", true); !ok {
 					return responses.NotFound(context)
 				} else {
-					return listItemUpdate(context, getOne, replaceOne, makeMap, id, simulatedUpdate, validatorMaker, logger)
+					return listItemUpdate(
+						context, getOne, idSetter, replaceOne, makeMap, id, simulatedUpdate, validatorMaker, logger,
+					)
 				}
 			})
 		case dsl.ReplaceVerb:

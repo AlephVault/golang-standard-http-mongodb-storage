@@ -15,6 +15,9 @@ import (
 // IDGetter is a function that returns the ID of an object.
 type IDGetter func(any) primitive.ObjectID
 
+// IDSetter is a function that sets the ID to an object.
+type IDSetter func(any, primitive.ObjectID)
+
 // CreateOneFunc stands for a function that creates one element.
 type CreateOneFunc func(echo.Context, any) (primitive.ObjectID, error)
 
@@ -256,8 +259,8 @@ func makeSimulatedUpdate(
 	}
 }
 
-// makeIDGetter returns a function which is the ID getter for a struct.
-func makeIDGetter(template any) IDGetter {
+// makeIDAccessors returns a function which is the ID getter for a struct.
+func makeIDAccessors(template any) (IDGetter, IDSetter) {
 	if template == nil {
 		panic("the template is null")
 	}
@@ -291,16 +294,26 @@ func makeIDGetter(template any) IDGetter {
 			panic("the type doesn't have an _id-mapped field: " + typeName)
 		} else {
 			return func(value any) primitive.ObjectID {
-				if value == nil {
-					panic("nil interface provided")
+					if value == nil {
+						panic("nil interface provided")
+					}
+					val := reflect.ValueOf(value).Elem()
+					if val.Type() != typ {
+						panic("invalid type: " + val.Type().Name())
+					} else {
+						return val.Field(fieldIndex).Interface().(primitive.ObjectID)
+					}
+				}, func(value any, _id primitive.ObjectID) {
+					if value == nil {
+						panic("nil interface provided")
+					}
+					val := reflect.ValueOf(value).Elem()
+					if val.Type() != typ {
+						panic("invalid type: " + val.Type().Name())
+					} else {
+						val.Field(fieldIndex).Set(reflect.ValueOf(_id))
+					}
 				}
-				val := reflect.ValueOf(value).Elem()
-				if val.Type() != typ {
-					panic("invalid type: " + val.Type().Name())
-				} else {
-					return val.Field(fieldIndex).Interface().(primitive.ObjectID)
-				}
-			}
 		}
 
 	} else {

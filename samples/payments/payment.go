@@ -2,15 +2,17 @@ package payments
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"standard-http-mongodb-storage/core/dsl"
 	"time"
 )
 
 // Payment is a payment record.
 type Payment struct {
-	FromAddr string    `validate:"required" bson:"from" json:"from"`
-	Amount   int       `validate:"required,gt=0" bson:"amount" json:"amount"`
-	When     time.Time `validate:"required" bson:"when" json:"when"`
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	FromAddr string             `validate:"required" bson:"from" json:"from"`
+	Amount   int                `validate:"required,gt=0" bson:"amount" json:"amount"`
+	When     time.Time          `validate:"required" bson:"when" json:"when"`
 }
 
 var (

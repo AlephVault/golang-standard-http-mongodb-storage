@@ -89,8 +89,9 @@ func simpleDelete(
 
 // simpleUpdate is the full handler of the PATCH endpoint for simple resources.
 func simpleUpdate(
-	ctx echo.Context, getOne GetOneFunc, idGetter IDGetter, replaceOne ReplaceOneFunc, makeMap func() any,
-	simulatedUpdate SimulatedUpdateFunc, validatorMaker func() *validator.Validate, logger *slog.Logger,
+	ctx echo.Context, getOne GetOneFunc, idGetter IDGetter, idSetter IDSetter, replaceOne ReplaceOneFunc,
+	makeMap func() any, simulatedUpdate SimulatedUpdateFunc, validatorMaker func() *validator.Validate,
+	logger *slog.Logger,
 ) error {
 	if element, err := getOne(ctx, primitive.NilObjectID); err == nil {
 		if updates, success, err := readJSONBody(ctx, makeMap, nil); success {
@@ -104,6 +105,7 @@ func simpleUpdate(
 				logger.Error("An error occurred: " + err.Error())
 				return responses.InternalError(ctx)
 			} else if updated {
+				idSetter(result, id)
 				return responses.OkWith(ctx, result)
 			} else {
 				return responses.NotFound(ctx)
@@ -189,8 +191,9 @@ func listItemGet(
 
 // listItemUpdate is the full handler of the PATCH endpoint for the list item resources.
 func listItemUpdate(
-	ctx echo.Context, getOne GetOneFunc, replaceOne ReplaceOneFunc, makeMap func() any, id primitive.ObjectID,
-	simulatedUpdate SimulatedUpdateFunc, validatorMaker func() *validator.Validate, logger *slog.Logger,
+	ctx echo.Context, getOne GetOneFunc, idSetter IDSetter, replaceOne ReplaceOneFunc, makeMap func() any,
+	id primitive.ObjectID, simulatedUpdate SimulatedUpdateFunc, validatorMaker func() *validator.Validate,
+	logger *slog.Logger,
 ) error {
 	if element, err := getOne(ctx, id); err == nil {
 		if updates, success, err := readJSONBody(ctx, makeMap, nil); success {
@@ -203,6 +206,7 @@ func listItemUpdate(
 				logger.Error("An error occurred: " + err.Error())
 				return responses.InternalError(ctx)
 			} else if updated {
+				idSetter(result, id)
 				return responses.OkWith(ctx, result)
 			} else {
 				return responses.NotFound(ctx)
