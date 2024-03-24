@@ -294,7 +294,7 @@ func makeIDGetter(template any) IDGetter {
 				if value == nil {
 					panic("nil interface provided")
 				}
-				val := reflect.ValueOf(value)
+				val := reflect.ValueOf(value).Elem()
 				if val.Type() != typ {
 					panic("invalid type: " + val.Type().Name())
 				} else {
