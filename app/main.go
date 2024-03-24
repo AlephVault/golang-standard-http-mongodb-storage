@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"standard-http-mongodb-storage/core/dsl"
 	"standard-http-mongodb-storage/core/responses"
 	"standard-http-mongodb-storage/core/validation"
@@ -50,6 +51,19 @@ func wrapStatus(next echo.HandlerFunc) echo.HandlerFunc {
 
 		// Otherwise, return whatever was returned.
 		return err
+	}
+}
+
+func capturePanic(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) (err error) {
+		defer func() {
+			if v := recover(); v != nil {
+				slog.Error("Panicked! %s\n\nHere:\n" + string(debug.Stack()))
+				err = responses.InternalError(c)
+			}
+		}()
+
+		return next(c)
 	}
 }
 
@@ -109,7 +123,7 @@ func MakeServer(
 	// Create the router.
 	slog.Info("Init::Starting the router")
 	router := echo.New()
-	router.Use(wrapStatus)
+	router.Use(capturePanic, wrapStatus)
 
 	// Configure the endpoints.
 	slog.Info("Init::Defining the resources")

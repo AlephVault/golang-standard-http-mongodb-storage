@@ -8,9 +8,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"standard-http-mongodb-storage/core/dsl"
+	"standard-http-mongodb-storage/core/requests"
 	"standard-http-mongodb-storage/core/responses"
-	"standard-http-mongodb-storage/samples/core"
-	"strings"
 )
 
 // UniverseVersion stands for the version of the game's universe / layout.
@@ -38,25 +37,14 @@ func SetMotd(
 	context echo.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
 	validatorMaker func() *validator.Validate, filter bson.M,
 ) (err error) {
-	defer func() {
-		if v := recover(); v != nil {
-			err = responses.UnexpectedFormat(context)
-		}
-	}()
-
-	if strings.Contains(strings.ToLower(context.Request().Header.Get("Content-Type")), "application/json") {
-		return responses.UnexpectedFormat(context)
-	}
-
 	body := SetMotdBody{}
-	if err := (&echo.DefaultBinder{}).BindBody(context, &body); err != nil {
-		return responses.UnexpectedFormat(context)
-	} else if err := core.SampleValidator.Struct(&body); err != nil {
-		return responses.InvalidFormat(context, err.(validator.ValidationErrors))
+
+	if success, err := requests.ReadJSONBody(context, validatorMaker(), &body); !success {
+		return err
 	}
 
 	if result, err := collection.UpdateOne(
-		context.Request().Context(), filter, bson.M{"$set": bson.M{"motd": body.Motd}},
+		context.Request().Context(), filter, echo.Map{"$set": echo.Map{"motd": body.Motd}},
 	); err != nil {
 		return responses.InternalError(context)
 	} else if result.ModifiedCount == 1 {
@@ -71,7 +59,7 @@ func GetVersion(
 	context echo.Context, client *mongo.Client, resource, method string, collection *mongo.Collection,
 	validatorMaker func() *validator.Validate, filter bson.M,
 ) error {
-	if result := collection.FindOne(context.Request().Context(), filter); result != nil && result.Err() == nil {
+	if result := collection.FindOne(context.Request().Context(), filter); result != nil && result.Err() != nil {
 		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
 			return responses.NotFound(context)
 		} else {
