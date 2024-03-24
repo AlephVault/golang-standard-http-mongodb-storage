@@ -142,7 +142,7 @@ func makeGetOne(
 
 		// Decode the result.
 		obj := make()
-		if err := result.Decode(&obj); err != nil {
+		if err := result.Decode(obj); err != nil {
 			return nil, err
 		} else {
 			return obj, nil
@@ -276,11 +276,11 @@ func makeIDGetter(template any) IDGetter {
 
 				if (!strings.HasSuffix(bsonTag, "omitempty") &&
 					!strings.Contains(bsonTag, ",omitempty,")) ||
-					(!strings.HasPrefix(jsonTag, "omitempty,") &&
-						!strings.HasSuffix(jsonTag, ",omitempty") &&
-						!strings.Contains(jsonTag, ",omitempty,") &&
-						jsonTag != "omitempty") {
-					panic("the _id-mapped field must also include the omitempty specifier both in json: and bson: tags")
+					!strings.HasPrefix(jsonTag, "_id,") ||
+					(!strings.HasSuffix(jsonTag, ",omitempty") &&
+						!strings.Contains(jsonTag, ",omitempty,")) {
+					panic("the _id-mapped field must be also mapped in JSON and also " +
+						"include the omitempty specifier both in JSON and BSON tags")
 				}
 
 				fieldIndex = i
