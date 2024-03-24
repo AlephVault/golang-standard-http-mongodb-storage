@@ -58,7 +58,7 @@ func simpleCreate(
 		return responses.AlreadyExists(ctx)
 	} else if parsed, ok, err := readJSONBody(ctx, make_, validatorMaker()); ok {
 		if id, err := createOne(ctx, parsed); err == nil {
-			return responses.OkWith(ctx, id)
+			return responses.Created(ctx, id)
 		} else if isDuplicateKeyError(err) {
 			return responses.DuplicateKey(ctx)
 		} else {
@@ -156,7 +156,7 @@ func listCreate(
 ) error {
 	if parsed, ok, err := readJSONBody(ctx, make_, validatorMaker()); ok {
 		if id, err := createOne(ctx, parsed); err == nil {
-			return responses.OkWith(ctx, id)
+			return responses.Created(ctx, id)
 		} else if isDuplicateKeyError(err) {
 			return responses.DuplicateKey(ctx)
 		} else {
