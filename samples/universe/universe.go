@@ -15,9 +15,9 @@ import (
 
 // UniverseVersion stands for the version of the game's universe / layout.
 type UniverseVersion struct {
-	Major    uint `bson:"major" json:"major"`
-	Minor    uint `bson:"minor" json:"minor"`
-	Revision uint `bson:"revision" json:"revision"`
+	Major    uint `validate:"required" bson:"major" json:"major"`
+	Minor    uint `validate:"required" bson:"minor" json:"minor"`
+	Revision uint `validate:"required" bson:"revision" json:"revision"`
 }
 
 // Universe is a sample singleton for the whole game layout.
@@ -25,7 +25,7 @@ type Universe struct {
 	ID      primitive.ObjectID `bson:"_id"`
 	Caption string             `validate:"required,gt=0" bson:"caption" json:"caption"`
 	Motd    string             `validate:"required,gt=0" bson:"motd" json:"motd"`
-	Version UniverseVersion    `validate:"dive" bson:"version" json:"version"`
+	Version UniverseVersion    `validate:"required,dive" bson:"version" json:"version"`
 }
 
 // SetMotdBody stands for the body for a "set-motd" method.

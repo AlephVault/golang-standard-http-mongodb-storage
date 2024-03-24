@@ -1,10 +1,12 @@
 package responses
 
 import (
+	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
+	"strings"
 )
 
 // AuthMissing dumps a simple "missing header" message
@@ -107,11 +109,13 @@ func UnexpectedFormat(c echo.Context) error {
 func InvalidFormat(c echo.Context, errors validator.ValidationErrors) error {
 	errorMessages := make([]string, len(errors))
 	for index, value := range errors {
-		errorMessages[index] = value.Error()
+		errorMessages[index] = fmt.Sprintf(
+			"%s: %s", strings.SplitN(value.Namespace(), ".", 2)[1], value.Tag(),
+		)
 	}
 	return c.JSON(http.StatusBadRequest, echo.Map{
 		"code":   "format:invalid",
-		"errors": errors,
+		"errors": errorMessages,
 	})
 }
 
