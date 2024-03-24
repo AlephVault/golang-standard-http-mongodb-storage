@@ -35,14 +35,16 @@ func readJSONBody(context echo.Context, make_ func() any, validator_ *validator.
 
 	// 2. Convert it to an instance of map[string]any or the given struct type.
 	myValue := make_()
-	if err := (&echo.DefaultBinder{}).BindBody(context, &myValue); err != nil {
+	if err := (&echo.DefaultBinder{}).BindBody(context, myValue); err != nil {
 		return nil, false, responses.UnexpectedFormat(context)
 	}
 
 	// 3. If a validator is specified, validate.
 	//    NOTES: This will not be invoked in maps.
-	if valid, err := validate(context, myValue, validator_); !valid {
-		return nil, false, err
+	if validator_ != nil {
+		if valid, err := validate(context, myValue, validator_); !valid {
+			return nil, false, err
+		}
 	}
 
 	// Return the parsed body.
@@ -103,7 +105,7 @@ func simpleUpdate(
 	ctx echo.Context, getOne GetOneFunc, idGetter IDGetter, replaceOne ReplaceOneFunc, makeMap func() any,
 	simulatedUpdate SimulatedUpdateFunc, validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) error {
-	if element, err := getOne(ctx, primitive.NilObjectID); err != nil {
+	if element, err := getOne(ctx, primitive.NilObjectID); err == nil {
 		if updates, success, err := readJSONBody(ctx, makeMap, nil); success {
 			id := idGetter(element)
 			if result, err := simulatedUpdate(ctx, id, element, updates); err != nil {
@@ -203,7 +205,7 @@ func listItemUpdate(
 	ctx echo.Context, getOne GetOneFunc, replaceOne ReplaceOneFunc, makeMap func() any, id primitive.ObjectID,
 	simulatedUpdate SimulatedUpdateFunc, validatorMaker func() *validator.Validate, logger *slog.Logger,
 ) error {
-	if element, err := getOne(ctx, id); err != nil {
+	if element, err := getOne(ctx, id); err == nil {
 		if updates, success, err := readJSONBody(ctx, makeMap, nil); success {
 			if result, err := simulatedUpdate(ctx, id, element, updates); err != nil {
 				logger.Error("An error occurred: " + err.Error())

@@ -42,7 +42,7 @@ func registerSimpleResourceEndpoints(
 
 	modelType_ := reflect.TypeOf(resource.ModelType())
 	make_ := func() any { return reflect.New(modelType_).Interface() }
-	makeMap := func() any { return make(bson.M) }
+	makeMap := func() any { return &bson.M{} }
 
 	createOne := makeCreateOne(collection)
 	getOne := makeGetOne(collection, make_, softDelete, filter, projection, sort)
