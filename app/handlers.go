@@ -111,7 +111,7 @@ func simpleUpdate(
 			if result, err := simulatedUpdate(ctx, id, element, updates); err != nil {
 				logger.Error("An error occurred: " + err.Error())
 				return responses.InternalError(ctx)
-			} else if result, err := validate(ctx, result, validatorMaker()); !result {
+			} else if valid, err := validate(ctx, result, validatorMaker()); !valid {
 				return err
 			} else if updated, err := replaceOne(ctx, id, result); err != nil {
 				logger.Error("An error occurred: " + err.Error())
@@ -210,7 +210,7 @@ func listItemUpdate(
 			if result, err := simulatedUpdate(ctx, id, element, updates); err != nil {
 				logger.Error("An error occurred: " + err.Error())
 				return responses.InternalError(ctx)
-			} else if result, err := validate(ctx, result, validatorMaker()); !result {
+			} else if valid, err := validate(ctx, result, validatorMaker()); !valid {
 				return err
 			} else if updated, err := replaceOne(ctx, id, result); err != nil {
 				logger.Error("An error occurred: " + err.Error())
