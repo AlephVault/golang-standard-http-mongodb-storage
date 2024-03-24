@@ -87,11 +87,14 @@ func requiredIifValidator(fl validator.FieldLevel) bool {
 // makeValidator creates the validator we need for this all.
 func makeValidator() *validator.Validate {
 	v := validator.New()
-	v.RegisterValidation("mdb-name", regexFunction(rxMongoName))
-	v.RegisterValidation("mdb-index-entry", regexFunction(rxMongoIndexEntry))
-	v.RegisterValidation("method-name", regexFunction(rxMethodName))
-	v.RegisterValidation("verbs", dsl.ValidateVerbs)
-	v.RegisterValidation("required_iif", requiredIifValidator)
+	v.RegisterTagNameFunc(func(field reflect.StructField) string {
+		return field.Tag.Get("json")
+	})
+	_ = v.RegisterValidation("mdb-name", regexFunction(rxMongoName))
+	_ = v.RegisterValidation("mdb-index-entry", regexFunction(rxMongoIndexEntry))
+	_ = v.RegisterValidation("method-name", regexFunction(rxMethodName))
+	_ = v.RegisterValidation("verbs", dsl.ValidateVerbs)
+	_ = v.RegisterValidation("required_iif", requiredIifValidator)
 	return v
 }
 
