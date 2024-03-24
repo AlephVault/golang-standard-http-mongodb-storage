@@ -241,14 +241,14 @@ func makeSimulatedUpdate(
 			return nil, err
 		} else {
 			obj := make()
-			var map_ bson.M
-			if err := result.Decode(&map_); err != nil {
+			var map_ = bson.M{}
+			if err := result.Decode(map_); err != nil {
 				return nil, err
 			}
 			delete(map_, "_id")
 			if raw, err := bson.Marshal(map_); err != nil {
 				return nil, err
-			} else if err := bson.Unmarshal(raw, &obj); err != nil {
+			} else if err := bson.Unmarshal(raw, obj); err != nil {
 				return nil, err
 			}
 			return obj, nil
