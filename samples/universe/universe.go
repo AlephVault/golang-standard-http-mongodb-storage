@@ -15,9 +15,9 @@ import (
 
 // UniverseVersion stands for the version of the game's universe / layout.
 type UniverseVersion struct {
-	Major    uint `validate:"required" bson:"major" json:"major"`
-	Minor    uint `validate:"required" bson:"minor" json:"minor"`
-	Revision uint `validate:"required" bson:"revision" json:"revision"`
+	Major    uint `bson:"major" json:"major"`
+	Minor    uint `bson:"minor" json:"minor"`
+	Revision uint `bson:"revision" json:"revision"`
 }
 
 // Universe is a sample singleton for the whole game layout.
