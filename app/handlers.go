@@ -33,7 +33,7 @@ func readJSONBody(context echo.Context, make_ func() any, validator_ *validator.
 		return nil, false, responses.UnexpectedFormat(context)
 	}
 
-	// 2. Convert it to an instance of map[string]any
+	// 2. Convert it to an instance of map[string]any or the given struct type.
 	myValue := make_()
 	if err := (&echo.DefaultBinder{}).BindBody(context, &myValue); err != nil {
 		return nil, false, responses.UnexpectedFormat(context)

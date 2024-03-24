@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log/slog"
+	"reflect"
 	"standard-http-mongodb-storage/core/dsl"
 	"standard-http-mongodb-storage/core/responses"
 )
@@ -39,7 +40,8 @@ func registerSimpleResourceEndpoints(
 	methods := resource.Methods
 	idGetter := makeIDGetter(resource.ModelType())
 
-	make_ := resource.ModelType
+	modelType_ := reflect.TypeOf(resource.ModelType())
+	make_ := func() any { return reflect.New(modelType_).Interface() }
 	makeMap := func() any { return make(bson.M) }
 
 	createOne := makeCreateOne(collection)
@@ -133,7 +135,8 @@ func registerListResourceEndpoints(
 	methods := resource.Methods
 	itemMethods := resource.ItemMethods
 
-	make_ := resource.ModelType
+	modelType_ := reflect.TypeOf(resource.ModelType())
+	make_ := func() any { return reflect.New(modelType_).Interface() }
 	makeMap := func() any { return make(bson.M) }
 
 	createOne := makeCreateOne(collection)
