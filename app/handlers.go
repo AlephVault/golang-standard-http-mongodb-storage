@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"log/slog"
 	"standard-http-mongodb-storage/core/dsl"
+	"standard-http-mongodb-storage/core/requests"
 	"standard-http-mongodb-storage/core/responses"
 	"strings"
 )
@@ -28,27 +29,13 @@ func validate(context echo.Context, value any, validator_ *validator.Validate) (
 
 // readJSONBody attempts to read a JSON body from the request and parse the object.
 func readJSONBody(context echo.Context, make_ func() any, validator_ *validator.Validate) (any, bool, error) {
-	// 1. Check that there's a JSON body
-	if context.Request().Body == nil || !strings.Contains(strings.ToLower(context.Request().Header.Get("Content-Type")), "application/json") {
-		return nil, false, responses.UnexpectedFormat(context)
-	}
+	body := make_()
 
-	// 2. Convert it to an instance of map[string]any or the given struct type.
-	myValue := make_()
-	if err := (&echo.DefaultBinder{}).BindBody(context, myValue); err != nil {
-		return nil, false, responses.UnexpectedFormat(context)
+	if success, err := requests.ReadJSONBody(context, validator_, body); !success {
+		return nil, false, err
+	} else {
+		return body, true, nil
 	}
-
-	// 3. If a validator is specified, validate.
-	//    NOTES: This will not be invoked in maps.
-	if validator_ != nil {
-		if valid, err := validate(context, myValue, validator_); !valid {
-			return nil, false, err
-		}
-	}
-
-	// Return the parsed body.
-	return myValue, true, nil
 }
 
 // simpleCreate is the full handler of the POST endpoint for simple resources.
