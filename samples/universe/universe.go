@@ -22,7 +22,7 @@ type UniverseVersion struct {
 
 // Universe is a sample singleton for the whole game layout.
 type Universe struct {
-	ID      primitive.ObjectID `bson:"_id,omitempty"`
+	ID      primitive.ObjectID `bson:"_id,omitempty" json:"omitempty"`
 	Caption string             `validate:"required,gt=0" bson:"caption" json:"caption"`
 	Motd    string             `validate:"required,gt=0" bson:"motd" json:"motd"`
 	Version UniverseVersion    `validate:"required,dive" bson:"version" json:"version"`

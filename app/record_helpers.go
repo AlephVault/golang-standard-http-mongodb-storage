@@ -269,11 +269,21 @@ func makeIDGetter(template any) IDGetter {
 		fieldIndex := -1
 		for i := 0; i < val.NumField(); i++ {
 			field := typ.Field(i)
-			tag := field.Tag.Get("bson")
-			if (tag == "_id" || strings.HasPrefix(tag, "_id,")) &&
+			bsonTag := field.Tag.Get("bson")
+			jsonTag := field.Tag.Get("json")
+			if (strings.HasPrefix(bsonTag, "_id,")) &&
 				field.Type == reflect.TypeOf(primitive.NilObjectID) {
-				fieldIndex = i
 
+				if (!strings.HasSuffix(bsonTag, "omitempty") &&
+					!strings.Contains(bsonTag, ",omitempty,")) ||
+					(!strings.HasPrefix(jsonTag, "omitempty,") &&
+						!strings.HasSuffix(jsonTag, ",omitempty") &&
+						!strings.Contains(jsonTag, ",omitempty,") &&
+						jsonTag != "omitempty") {
+					panic("the _id-mapped field must also include the omitempty specifier both in json: and bson: tags")
+				}
+
+				fieldIndex = i
 				break
 			}
 		}
