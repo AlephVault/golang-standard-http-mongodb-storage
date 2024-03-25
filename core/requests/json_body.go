@@ -17,7 +17,7 @@ func ReadJSONBody(context echo.Context, validator_ *validator.Validate, body any
 		return false, responses.UnexpectedFormat(context)
 	}
 
-	if err := (&echo.DefaultBinder{}).BindBody(context, &body); err != nil {
+	if err := (&echo.DefaultBinder{}).BindBody(context, body); err != nil {
 		return false, responses.UnexpectedFormat(context)
 	}
 
