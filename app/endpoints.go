@@ -160,14 +160,14 @@ func registerListResourceEndpoints(
 	for _, verb := range verbs {
 		switch verb {
 		case dsl.CreateVerb:
-			router.GET("/"+key, func(context echo.Context) error {
+			router.POST("/"+key, func(context echo.Context) error {
 				if success, err := authenticate(context, authCollection, key, "read"); !success {
 					return err
 				}
 				return listCreate(context, createOne, make_, validatorMaker, logger)
 			})
 		case dsl.ListVerb:
-			router.POST("/"+key, func(context echo.Context) error {
+			router.GET("/"+key, func(context echo.Context) error {
 				if success, err := authenticate(context, authCollection, key, "write"); !success {
 					return err
 				}
