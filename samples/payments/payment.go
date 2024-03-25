@@ -12,7 +12,7 @@ type Payment struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	FromAddr string             `validate:"required" bson:"from" json:"from"`
 	Amount   int                `validate:"required,gt=0" bson:"amount" json:"amount"`
-	When     formats.Time       `validate:"required" bson:"when" json:"when"`
+	When     formats.DateTime   `validate:"required" bson:"when" json:"when"`
 }
 
 var (
