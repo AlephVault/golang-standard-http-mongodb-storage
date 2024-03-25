@@ -26,5 +26,26 @@ var (
 		ModelType:  dsl.ModelType[Payment],
 		// Projection: bson.M{"foo": "bar"},
 		ItemProjection: bson.M{"from": 1, "amount": 1, "when": 1},
+		// TODO IMPLEMENT THIS EXAMPLE.
+		Methods: map[string]dsl.ResourceMethod{
+			"get-from": dsl.ResourceMethod{
+				Type:    dsl.View,
+				Handler: nil,
+			},
+			"clear-from": dsl.ResourceMethod{
+				Type:    dsl.Operation,
+				Handler: nil,
+			},
+		},
+		ItemMethods: map[string]dsl.ItemMethod{
+			"put-now": dsl.ItemMethod{
+				Type:    dsl.Operation,
+				Handler: nil,
+			},
+			"get-prive": dsl.ItemMethod{
+				Type:    dsl.View,
+				Handler: nil,
+			},
+		},
 	}
 )
