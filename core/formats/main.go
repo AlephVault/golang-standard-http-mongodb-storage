@@ -3,6 +3,8 @@ package formats
 import (
 	"encoding/json"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"time"
 )
 
@@ -51,4 +53,15 @@ func (ct *Time) UnmarshalJSON(b []byte) error {
 		}
 	}
 	return fmt.Errorf("time data '%s' does not match any of the available formats", str)
+}
+
+// MarshalBSONValue does a BSON marshalling.
+func (ct *Time) MarshalBSONValue() (bsontype.Type, []byte, error) {
+	return bson.MarshalValue(time.Time(*ct))
+}
+
+// UnmarshalBSONValue does a BSON de-marshalling through all
+// the available date/time formats until one matches.
+func (ct *Time) UnmarshalBSONValue(t bsontype.Type, value []byte) error {
+	return bson.UnmarshalValue(t, value, ct)
 }
