@@ -109,10 +109,10 @@ func makeGetMany(
 			var elements = []any{}
 			for cursor.Next(ctx.Request().Context()) {
 				element := make()
-				if err := cursor.Decode(&element); err != nil {
+				if err := cursor.Decode(element); err != nil {
 					return nil, err
 				}
-				elements = append(elements, cursor)
+				elements = append(elements, element)
 			}
 			return elements, nil
 		}
