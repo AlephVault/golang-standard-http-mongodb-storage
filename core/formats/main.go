@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
@@ -20,7 +21,9 @@ var dateTimeFormats = []string{
 var useMicroSeconds = false
 
 // Time works like time but has a custom formatting.
-type Time time.Time
+type Time struct {
+	time.Time
+}
 
 // UseMicroSeconds sets whether this application (or set of)
 // should use microseconds while dumping date/times or not.
@@ -34,7 +37,7 @@ func (ct *Time) MarshalJSON() ([]byte, error) {
 	if useMicroSeconds {
 		dateTimeFormatIndex = 1
 	}
-	return json.Marshal(time.Time(*ct).Format(dateTimeFormats[dateTimeFormatIndex]))
+	return json.Marshal(ct.Time.Format(dateTimeFormats[dateTimeFormatIndex]))
 }
 
 // UnmarshalJSON does a JSON de-marshalling through all
@@ -48,7 +51,7 @@ func (ct *Time) UnmarshalJSON(b []byte) error {
 	for _, dateTimeFormat := range dateTimeFormats {
 		t, err := time.Parse(dateTimeFormat, str)
 		if err == nil {
-			*ct = Time(t)
+			ct.Time = t
 			return nil
 		}
 	}
@@ -56,12 +59,17 @@ func (ct *Time) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalBSONValue does a BSON marshalling.
-func (ct *Time) MarshalBSONValue() (bsontype.Type, []byte, error) {
-	return bson.MarshalValue(time.Time(*ct))
+func (ct Time) MarshalBSONValue() (bsontype.Type, []byte, error) {
+	return bson.MarshalValue(primitive.NewDateTimeFromTime(ct.Time))
 }
 
 // UnmarshalBSONValue does a BSON de-marshalling through all
 // the available date/time formats until one matches.
-func (ct *Time) UnmarshalBSONValue(t bsontype.Type, value []byte) error {
-	return bson.UnmarshalValue(t, value, ct)
+func (ct *Time) UnmarshalBSONValue(t bsontype.Type, data []byte) error {
+	var dt primitive.DateTime
+	if err := bson.UnmarshalValue(t, data, &dt); err != nil {
+		return err
+	}
+	ct.Time = dt.Time()
+	return nil
 }
