@@ -123,6 +123,7 @@ func MakeServer(
 	// Create the router.
 	slog.Info("Init::Starting the router")
 	router := echo.New()
+	router.Debug = settings.Debug
 	router.Use(capturePanic, wrapStatus)
 
 	// Configure the endpoints.
