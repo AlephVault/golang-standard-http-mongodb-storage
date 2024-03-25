@@ -85,7 +85,13 @@ func makeGetMany(
 		}
 
 		// Try getting many elements.
-		options_ := options.Find().SetProjection(projection).SetSort(sort)
+		options_ := options.Find()
+		if len(projection) != 0 {
+			options_.SetProjection(projection)
+		}
+		if len(sort) != 0 {
+			options_.SetSort(sort)
+		}
 		if pageSize > 0 {
 			options_ = options_.SetLimit(pageSize)
 			if page > 0 {
@@ -100,7 +106,7 @@ func makeGetMany(
 			defer func(cursor *mongo.Cursor, ctx echo.Context) {
 				_ = cursor.Close(ctx.Request().Context())
 			}(cursor, ctx)
-			var elements []any
+			var elements = []any{}
 			for cursor.Next(ctx.Request().Context()) {
 				element := make()
 				if err := cursor.Decode(&element); err != nil {
