@@ -183,7 +183,7 @@ func registerListResourceEndpoints(
 					return listItemGet(context, getOne, id, logger)
 				} else {
 					return resourceMethod(
-						context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
+						context, collection, filter, key, dsl.View, context.Param("id_or_method"), methods, client,
 						validatorMaker, logger,
 					)
 				}
@@ -234,7 +234,7 @@ func registerListResourceEndpoints(
 				return err
 			}
 			return resourceMethod(
-				context, collection, filter, key, dsl.Operation, context.Param("method"), methods, client,
+				context, collection, filter, key, dsl.View, context.Param("method"), methods, client,
 				validatorMaker, logger,
 			)
 		})
