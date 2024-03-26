@@ -187,11 +187,6 @@ func makeDeleteOne(
 func makeUpdateOne(
 	collection *mongo.Collection, filter bson.M, softDelete bool,
 ) UpdateOneFunc {
-	// TODO THE APPROACH OF HAVING A MAP DOES NOT WORK. THIS IS BECAUSE
-	// TODO IF A (STRING) DATE IS PRESENT, IT WILL REMAIN A STRING IN THE
-	// TODO MAP (AND LATER INTO THE UPDATED DATA), THEN BEING A STRING WHILE
-	// TODO ATTEMPTING TO DE-SERIALIZE THE DateTime FIELD FROM THE STRING
-	// TODO WHEN RETRIEVING / UNMARSHALLING THE OBJECT.
 	return func(ctx echo.Context, id primitive.ObjectID, updates bson.M) (bool, error) {
 		var err error
 		var filter_ bson.M
