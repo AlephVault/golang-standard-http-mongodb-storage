@@ -1,10 +1,18 @@
 package payments
 
 import (
+	"errors"
+	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"maps"
 	"standard-http-mongodb-storage/core/dsl"
 	"standard-http-mongodb-storage/core/formats"
+	"standard-http-mongodb-storage/core/responses"
+	"strings"
+	"time"
 )
 
 // Payment is a payment record.
@@ -26,25 +34,113 @@ var (
 		ModelType:  dsl.ModelType[Payment],
 		// Projection: bson.M{"foo": "bar"},
 		ItemProjection: bson.M{"from": 1, "amount": 1, "when": 1},
-		// TODO IMPLEMENT THIS EXAMPLE.
 		Methods: map[string]dsl.ResourceMethod{
-			"get-from": dsl.ResourceMethod{
-				Type:    dsl.View,
-				Handler: nil,
+			"get-from": {
+				Type: dsl.View,
+				Handler: func(context echo.Context, client *mongo.Client, resource, method string, collection *mongo.Collection, validatorMaker func() *validator.Validate, filter bson.M) error {
+					ctx := context.Request().Context()
+					var from = ""
+					echo.QueryParamsBinder(context).String("from", &from)
+					from = strings.TrimSpace(from)
+
+					filter_ := bson.M{}
+					maps.Copy(filter_, filter)
+					if from != "" {
+						filter_["from"] = from
+					} else {
+						return responses.OkWith(context, []Payment{})
+					}
+
+					if cursor, err := collection.Find(ctx, filter_); err != nil {
+						return responses.InternalError(context)
+					} else {
+						elements := []Payment{}
+						for cursor.Next(ctx) {
+							element := Payment{}
+							if err := cursor.Decode(&element); err != nil {
+								return responses.InternalError(context)
+							}
+							elements = append(elements, element)
+						}
+						return responses.OkWith(context, elements)
+					}
+				},
 			},
-			"clear-from": dsl.ResourceMethod{
-				Type:    dsl.Operation,
-				Handler: nil,
+			"clear-from": {
+				Type: dsl.Operation,
+				Handler: func(context echo.Context, client *mongo.Client, resource, method string, collection *mongo.Collection, validatorMaker func() *validator.Validate, filter bson.M) error {
+					ctx := context.Request().Context()
+					var from = ""
+					echo.QueryParamsBinder(context).String("from", &from)
+					from = strings.TrimSpace(from)
+
+					if from != "" {
+						filter_ := bson.M{}
+						maps.Copy(filter_, filter)
+						filter_["from"] = from
+						if _, err := collection.DeleteMany(ctx, filter_); err != nil {
+							return responses.InternalError(context)
+						}
+					}
+
+					return responses.Ok(context)
+				},
 			},
 		},
 		ItemMethods: map[string]dsl.ItemMethod{
-			"put-now": dsl.ItemMethod{
-				Type:    dsl.Operation,
-				Handler: nil,
+			"put-now": {
+				Type: dsl.Operation,
+				Handler: func(context echo.Context, client *mongo.Client, resource, method string, collection *mongo.Collection, validatorMaker func() *validator.Validate, filter bson.M, id primitive.ObjectID) error {
+					ctx := context.Request().Context()
+					filter_ := bson.M{}
+					maps.Copy(filter_, filter)
+					filter_["_id"] = id
+
+					// First, update.
+					if result, err := collection.UpdateOne(ctx, filter_, bson.M{"$set": primitive.NewDateTimeFromTime(time.Now())}); err != nil {
+						return responses.InternalError(context)
+					} else if result.ModifiedCount == 0 {
+						return responses.NotFound(context)
+					}
+
+					// Then, retrieve.
+					if result := collection.FindOne(ctx, bson.M{"_id": id}); result.Err() != nil {
+						if errors.Is(result.Err(), mongo.ErrNoDocuments) {
+							return responses.NotFound(context)
+						} else {
+							return responses.InternalError(context)
+						}
+					} else {
+						v := Payment{}
+						if err := result.Decode(&v); err != nil {
+							return responses.InternalError(context)
+						}
+						return responses.OkWith(context, v)
+					}
+				},
 			},
-			"get-prive": dsl.ItemMethod{
-				Type:    dsl.View,
-				Handler: nil,
+			"get-amount": {
+				Type: dsl.View,
+				Handler: func(context echo.Context, client *mongo.Client, resource, method string, collection *mongo.Collection, validatorMaker func() *validator.Validate, filter bson.M, id primitive.ObjectID) error {
+					ctx := context.Request().Context()
+					filter_ := bson.M{}
+					maps.Copy(filter_, filter)
+					filter_["_id"] = id
+
+					if result := collection.FindOne(ctx, filter_); result.Err() != nil {
+						if errors.Is(result.Err(), mongo.ErrNoDocuments) {
+							return responses.NotFound(context)
+						} else {
+							return responses.InternalError(context)
+						}
+					} else {
+						v := Payment{}
+						if err := result.Decode(&v); err != nil {
+							return responses.InternalError(context)
+						}
+						return responses.OkWith(context, v.Amount)
+					}
+				},
 			},
 		},
 	}
