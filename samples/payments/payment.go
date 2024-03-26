@@ -97,7 +97,7 @@ var (
 					filter_["_id"] = id
 
 					// First, update.
-					if result, err := collection.UpdateOne(ctx, filter_, bson.M{"$set": primitive.NewDateTimeFromTime(time.Now())}); err != nil {
+					if result, err := collection.UpdateOne(ctx, filter_, bson.M{"$set": bson.M{"when": primitive.NewDateTimeFromTime(time.Now())}}); err != nil {
 						return responses.InternalError(context)
 					} else if result.ModifiedCount == 0 {
 						return responses.NotFound(context)
