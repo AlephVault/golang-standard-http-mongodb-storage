@@ -179,7 +179,7 @@ func registerListResourceEndpoints(
 				if success, err := authenticate(context, authCollection, key, "read"); !success {
 					return err
 				}
-				if id, ok := checkId(context, "id_or_method", true); ok {
+				if id, ok, _ := checkId(context, "id_or_method", false); ok {
 					return listItemGet(context, getOne, id, logger)
 				} else {
 					return resourceMethod(
@@ -193,8 +193,12 @@ func registerListResourceEndpoints(
 				if success, err := authenticate(context, authCollection, key, "write"); !success {
 					return err
 				}
-				if id, ok := checkId(context, "id", true); !ok {
-					return responses.NotFound(context)
+				if id, ok, err := checkId(context, "id", true); !ok {
+					if err == nil {
+						return responses.NotFound(context)
+					} else {
+						return err
+					}
 				} else {
 					return listItemUpdate(
 						context, getOne, idSetter, replaceOne, makeMap, id, simulatedUpdate, validatorMaker, logger,
@@ -206,8 +210,12 @@ func registerListResourceEndpoints(
 				if success, err := authenticate(context, authCollection, key, "write"); !success {
 					return err
 				}
-				if id, ok := checkId(context, "id", true); !ok {
-					return responses.NotFound(context)
+				if id, ok, err := checkId(context, "id", true); !ok {
+					if err == nil {
+						return responses.NotFound(context)
+					} else {
+						return err
+					}
 				} else {
 					return listItemReplace(context, replaceOne, make_, id, validatorMaker, logger)
 				}
@@ -217,8 +225,12 @@ func registerListResourceEndpoints(
 				if success, err := authenticate(context, authCollection, key, "delete"); !success {
 					return err
 				}
-				if id, ok := checkId(context, "id", true); !ok {
-					return responses.NotFound(context)
+				if id, ok, err := checkId(context, "id", true); !ok {
+					if err == nil {
+						return responses.NotFound(context)
+					} else {
+						return err
+					}
 				} else {
 					return listItemDelete(context, deleteOne, id, logger)
 				}
@@ -253,8 +265,12 @@ func registerListResourceEndpoints(
 		if success, err := authenticate(context, authCollection, key, "read"); !success {
 			return err
 		}
-		if id, ok := checkId(context, "id", true); !ok {
-			return responses.NotFound(context)
+		if id, ok, err := checkId(context, "id", true); !ok {
+			if err == nil {
+				return responses.NotFound(context)
+			} else {
+				return err
+			}
 		} else {
 			return itemMethod(
 				context, collection, filter, key, dsl.View, id, context.Param("method"), itemMethods, client,
@@ -266,8 +282,12 @@ func registerListResourceEndpoints(
 		if success, err := authenticate(context, authCollection, key, "write"); !success {
 			return err
 		}
-		if id, ok := checkId(context, "id", true); !ok {
-			return responses.NotFound(context)
+		if id, ok, err := checkId(context, "id", true); !ok {
+			if err == nil {
+				return responses.NotFound(context)
+			} else {
+				return err
+			}
 		} else {
 			return itemMethod(
 				context, collection, filter, key, dsl.Operation, id, context.Param("method"), itemMethods, client,

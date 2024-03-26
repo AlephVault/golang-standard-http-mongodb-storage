@@ -24,15 +24,15 @@ func checkPermission(permission string, existingPermissions []any) bool {
 }
 
 // checkId ensures the :id is valid.
-func checkId(ctx echo.Context, arg string, raiseNotFoundOnError bool) (primitive.ObjectID, bool) {
+func checkId(ctx echo.Context, arg string, raiseNotFoundOnError bool) (primitive.ObjectID, bool, error) {
 	idParam := ctx.Param(arg)
 	if id, err := primitive.ObjectIDFromHex(idParam); err != nil {
 		if raiseNotFoundOnError {
-			_ = responses.NotFound(ctx)
+			return primitive.NilObjectID, false, responses.NotFound(ctx)
 		}
-		return primitive.NilObjectID, false
+		return primitive.NilObjectID, false, nil
 	} else {
-		return id, true
+		return id, true, err
 	}
 }
 
