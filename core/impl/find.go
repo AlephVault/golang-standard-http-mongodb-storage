@@ -34,6 +34,9 @@ func GetDocuments[T any](
 		}
 	}
 
+	defer func(cursor *mongo.Cursor) {
+		_ = cursor.Close(ctx)
+	}(cursor)
 	for cursor.Next(ctx) {
 		var t T
 		if err := cursor.Decode(&t); err != nil {
