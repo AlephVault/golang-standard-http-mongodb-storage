@@ -159,7 +159,7 @@ func prepareIndices(client *mongo.Client, settings *dsl.Settings) (err error) {
 	slog.Info(fmt.Sprintf("Init/Indices::Creating indices for auth db=%s table=%s", settings.Auth.Db, settings.Auth.Collection))
 	if _, err = authIndices.CreateOne(
 		bg, mongo.IndexModel{
-			Keys: bson.M{"api-key": 1}, // 1=Ascending.
+			Keys: bson.D{{Key: "api-key", Value: 1}}, // 1=Ascending.
 			Options: &options.IndexOptions{
 				Name:   &name,
 				Sparse: &sparse,
@@ -174,7 +174,7 @@ func prepareIndices(client *mongo.Client, settings *dsl.Settings) (err error) {
 		for name, index := range resource.Indexes {
 			unique := index.Unique
 			fields := index.Fields
-			fieldsMap := bson.M{}
+			fieldsMap := bson.D{}
 			for _, field := range fields {
 				var type_ any
 				switch field[0] {
@@ -189,7 +189,7 @@ func prepareIndices(client *mongo.Client, settings *dsl.Settings) (err error) {
 				default:
 					type_ = 1
 				}
-				fieldsMap[field] = type_
+				fieldsMap = append(fieldsMap, bson.E{Key: field, Value: type_})
 			}
 			if _, err = client.Database(resource.Db).Collection(resource.Collection).Indexes().CreateOne(
 				bg, mongo.IndexModel{
