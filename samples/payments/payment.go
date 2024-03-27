@@ -3,6 +3,7 @@ package payments
 import (
 	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/dsl"
 	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/formats"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/impl"
 	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/responses"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -103,14 +104,11 @@ var (
 					}
 
 					// Then, retrieve.
-					if result := collection.FindOne(ctx, bson.M{"_id": id}); result.Err() != nil {
-						return responses.FindOneOperationError(context, result.Err())
-					} else {
-						v := Payment{}
-						if err := result.Decode(&v); err != nil {
-							return responses.InternalError(context)
-						}
+					v := Payment{}
+					if err := impl.GetDocument(context, collection.FindOne(ctx, bson.M{"_id": id}), &v); err == nil {
 						return responses.OkWith(context, v)
+					} else {
+						return err
 					}
 				},
 			},
@@ -122,14 +120,11 @@ var (
 					maps.Copy(filter_, filter)
 					filter_["_id"] = id
 
-					if result := collection.FindOne(ctx, filter_); result.Err() != nil {
-						return responses.FindOneOperationError(context, result.Err())
-					} else {
-						v := Payment{}
-						if err := result.Decode(&v); err != nil {
-							return responses.InternalError(context)
-						}
+					v := Payment{}
+					if err := impl.GetDocument(context, collection.FindOne(ctx, bson.M{"_id": id}), &v); err == nil {
 						return responses.OkWith(context, v.Amount)
+					} else {
+						return err
 					}
 				},
 			},
