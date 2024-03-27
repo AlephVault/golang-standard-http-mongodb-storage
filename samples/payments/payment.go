@@ -55,7 +55,7 @@ var (
 						return responses.InternalError(context)
 					} else {
 						elements := []Payment{}
-						if err := impl.GetDocuments[Payment](context, cursor, &elements); err != nil {
+						if success, err := impl.GetDocuments[Payment](context, cursor, &elements); success {
 							return err
 						} else {
 							return responses.OkWith(context, elements)
@@ -102,7 +102,7 @@ var (
 
 					// Then, retrieve.
 					v := Payment{}
-					if err := impl.GetDocument(context, collection.FindOne(ctx, bson.M{"_id": id}), &v); err == nil {
+					if success, err := impl.GetDocument(context, collection.FindOne(ctx, bson.M{"_id": id}), &v); success {
 						return responses.OkWith(context, v)
 					} else {
 						return err
@@ -118,7 +118,7 @@ var (
 					filter_["_id"] = id
 
 					v := Payment{}
-					if err := impl.GetDocument(context, collection.FindOne(ctx, bson.M{"_id": id}), &v); err == nil {
+					if success, err := impl.GetDocument(context, collection.FindOne(ctx, bson.M{"_id": id}), &v); success {
 						return responses.OkWith(context, v.Amount)
 					} else {
 						return err

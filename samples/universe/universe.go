@@ -60,7 +60,7 @@ func GetVersion(
 	validatorMaker func() *validator.Validate, filter bson.M,
 ) error {
 	universe := Universe{}
-	if err := impl.GetDocument(context, collection.FindOne(context.Request().Context(), filter), &universe); err == nil {
+	if success, err := impl.GetDocument(context, collection.FindOne(context.Request().Context(), filter), &universe); success {
 		return responses.OkWith(context, universe.Version)
 	} else {
 		return err

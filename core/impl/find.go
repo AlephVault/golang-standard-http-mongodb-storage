@@ -11,11 +11,11 @@ import (
 func GetDocument(
 	context echo.Context, findOneResult *mongo.SingleResult, element any,
 	logger ...*slog.Logger,
-) error {
+) (bool, error) {
 	if err := findOneResult.Decode(element); err != nil {
-		return responses.FindOneOperationError(context, err, logger...)
+		return false, responses.FindOneOperationError(context, err, logger...)
 	} else {
-		return nil
+		return true, nil
 	}
 }
 
@@ -23,7 +23,7 @@ func GetDocument(
 func GetDocuments[T any](
 	context echo.Context, cursor *mongo.Cursor, elements *[]T,
 	logger ...*slog.Logger,
-) error {
+) (bool, error) {
 	newElements := []T{}
 	ctx := context.Request().Context()
 	log := func(error) {}
@@ -41,11 +41,11 @@ func GetDocuments[T any](
 		var t T
 		if err := cursor.Decode(&t); err != nil {
 			log(err)
-			return responses.InternalError(context)
+			return false, responses.InternalError(context)
 		}
 		newElements = append(newElements, t)
 	}
 
 	*elements = newElements
-	return nil
+	return true, nil
 }
