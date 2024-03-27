@@ -8,8 +8,8 @@ import (
 )
 
 // GetDocument gets the only document from a FindOne result.
-func GetDocument[T any](
-	context echo.Context, findOneResult *mongo.SingleResult, element *T,
+func GetDocument(
+	context echo.Context, findOneResult *mongo.SingleResult, element any,
 	logger ...*slog.Logger,
 ) error {
 	if err := findOneResult.Decode(element); err != nil {
