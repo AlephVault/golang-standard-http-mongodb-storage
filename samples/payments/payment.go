@@ -55,14 +55,11 @@ var (
 						return responses.InternalError(context)
 					} else {
 						elements := []Payment{}
-						for cursor.Next(ctx) {
-							element := Payment{}
-							if err := cursor.Decode(&element); err != nil {
-								return responses.InternalError(context)
-							}
-							elements = append(elements, element)
+						if err := impl.GetDocuments[Payment](context, cursor, &elements); err != nil {
+							return err
+						} else {
+							return responses.OkWith(context, elements)
 						}
-						return responses.OkWith(context, elements)
 					}
 				},
 			},
