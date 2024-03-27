@@ -3,6 +3,9 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/dsl"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/responses"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/validation"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,9 +15,6 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
-	"standard-http-mongodb-storage/core/dsl"
-	"standard-http-mongodb-storage/core/responses"
-	"standard-http-mongodb-storage/core/validation"
 	"strings"
 )
 

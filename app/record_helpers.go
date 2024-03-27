@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/dsl"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -8,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"maps"
 	"reflect"
-	"standard-http-mongodb-storage/core/dsl"
 	"strings"
 )
 

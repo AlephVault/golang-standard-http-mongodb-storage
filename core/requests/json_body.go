@@ -1,9 +1,9 @@
 package requests
 
 import (
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/responses"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
-	"standard-http-mongodb-storage/core/responses"
 	"strings"
 )
 

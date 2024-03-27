@@ -1,13 +1,13 @@
 package app
 
 import (
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/dsl"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/responses"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log/slog"
 	"reflect"
-	"standard-http-mongodb-storage/core/dsl"
-	"standard-http-mongodb-storage/core/responses"
 )
 
 func registerEndpoints(

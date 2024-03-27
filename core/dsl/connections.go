@@ -1,9 +1,9 @@
 package dsl
 
 import (
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/connections"
 	"go.mongodb.org/mongo-driver/mongo"
 	"os"
-	"standard-http-mongodb-storage/core/connections"
 	"strconv"
 )
 

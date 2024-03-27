@@ -1,10 +1,10 @@
 package validation
 
 import (
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/dsl"
 	"github.com/go-playground/validator/v10"
 	"reflect"
 	"regexp"
-	"standard-http-mongodb-storage/core/dsl"
 	"strconv"
 	"strings"
 )

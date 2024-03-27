@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/app"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/auth"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/dsl"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/samples/payments"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/samples/universe"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"standard-http-mongodb-storage/app"
-	"standard-http-mongodb-storage/core/auth"
-	"standard-http-mongodb-storage/core/dsl"
-	"standard-http-mongodb-storage/samples/payments"
-	"standard-http-mongodb-storage/samples/universe"
 )
 
 func LaunchServer() {

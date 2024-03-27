@@ -2,15 +2,15 @@ package payments
 
 import (
 	"errors"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/dsl"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/formats"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/responses"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"maps"
-	"standard-http-mongodb-storage/core/dsl"
-	"standard-http-mongodb-storage/core/formats"
-	"standard-http-mongodb-storage/core/responses"
 	"strings"
 	"time"
 )

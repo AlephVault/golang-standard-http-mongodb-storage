@@ -2,13 +2,13 @@ package app
 
 import (
 	"errors"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/auth"
+	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/responses"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"regexp"
-	"standard-http-mongodb-storage/core/auth"
-	"standard-http-mongodb-storage/core/responses"
 	"strings"
 	"time"
 )
