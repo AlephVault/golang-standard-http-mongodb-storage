@@ -145,7 +145,7 @@ func FindOneOperationError(c echo.Context, err error, logger ...*slog.Logger) er
 		return NotFound(c)
 	} else {
 		if len(logger) > 0 {
-			logger[0].Info("An error occurred: " + err.Error())
+			logger[0].Error("An error occurred: " + err.Error())
 		}
 		return InternalError(c)
 	}
