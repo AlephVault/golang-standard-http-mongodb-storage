@@ -1,7 +1,6 @@
 package universe
 
 import (
-	"errors"
 	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/dsl"
 	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/requests"
 	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/responses"
@@ -60,11 +59,7 @@ func GetVersion(
 	validatorMaker func() *validator.Validate, filter bson.M,
 ) error {
 	if result := collection.FindOne(context.Request().Context(), filter); result != nil && result.Err() != nil {
-		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
-			return responses.NotFound(context)
-		} else {
-			return responses.InternalError(context)
-		}
+		return responses.FindOneOperationError(context, result.Err())
 	} else {
 		universe := Universe{}
 		if err := result.Decode(&universe); err != nil {

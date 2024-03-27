@@ -65,11 +65,8 @@ func simpleGet(
 ) error {
 	if element, err := getOne(ctx, primitive.NilObjectID); err == nil {
 		return responses.OkWith(ctx, element)
-	} else if errors.Is(err, mongo.ErrNoDocuments) {
-		return responses.NotFound(ctx)
 	} else {
-		logger.Error("An error occurred: " + err.Error())
-		return responses.InternalError(ctx)
+		return responses.FindOneOperationError(ctx, err, logger)
 	}
 }
 
@@ -113,11 +110,8 @@ func simpleUpdate(
 		} else {
 			return err
 		}
-	} else if errors.Is(err, mongo.ErrNoDocuments) {
-		return responses.NotFound(ctx)
 	} else {
-		logger.Error("An error occurred: " + err.Error())
-		return responses.InternalError(ctx)
+		return responses.FindOneOperationError(ctx, err, logger)
 	}
 }
 
@@ -181,11 +175,8 @@ func listItemGet(
 ) error {
 	if element, err := getOne(ctx, id); err == nil {
 		return responses.OkWith(ctx, element)
-	} else if errors.Is(err, mongo.ErrNoDocuments) {
-		return responses.NotFound(ctx)
 	} else {
-		logger.Error("An error occurred: " + err.Error())
-		return responses.InternalError(ctx)
+		return responses.FindOneOperationError(ctx, err, logger)
 	}
 }
 
@@ -214,11 +205,8 @@ func listItemUpdate(
 		} else {
 			return err
 		}
-	} else if errors.Is(err, mongo.ErrNoDocuments) {
-		return responses.NotFound(ctx)
 	} else {
-		logger.Error("An error occurred: " + err.Error())
-		return responses.InternalError(ctx)
+		return responses.FindOneOperationError(ctx, err, logger)
 	}
 }
 

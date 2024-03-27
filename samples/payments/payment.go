@@ -1,7 +1,6 @@
 package payments
 
 import (
-	"errors"
 	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/dsl"
 	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/formats"
 	"github.com/AlephVault/golang-standard-http-mongodb-storage/core/responses"
@@ -105,11 +104,7 @@ var (
 
 					// Then, retrieve.
 					if result := collection.FindOne(ctx, bson.M{"_id": id}); result.Err() != nil {
-						if errors.Is(result.Err(), mongo.ErrNoDocuments) {
-							return responses.NotFound(context)
-						} else {
-							return responses.InternalError(context)
-						}
+						return responses.FindOneOperationError(context, result.Err())
 					} else {
 						v := Payment{}
 						if err := result.Decode(&v); err != nil {
@@ -128,11 +123,7 @@ var (
 					filter_["_id"] = id
 
 					if result := collection.FindOne(ctx, filter_); result.Err() != nil {
-						if errors.Is(result.Err(), mongo.ErrNoDocuments) {
-							return responses.NotFound(context)
-						} else {
-							return responses.InternalError(context)
-						}
+						return responses.FindOneOperationError(context, result.Err())
 					} else {
 						v := Payment{}
 						if err := result.Decode(&v); err != nil {

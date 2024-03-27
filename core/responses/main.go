@@ -1,10 +1,13 @@
 package responses
 
 import (
+	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -133,4 +136,17 @@ func DuplicateKey(c echo.Context) error {
 	return c.JSON(http.StatusConflict, echo.Map{
 		"code": "duplicate-key",
 	})
+}
+
+// FindOneOperationError is a helper to render an error
+// for a MongoDB's FindOne operation on a collection.
+func FindOneOperationError(c echo.Context, err error, logger ...*slog.Logger) error {
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return NotFound(c)
+	} else {
+		if len(logger) > 0 {
+			logger[0].Info("An error occurred: " + err.Error())
+		}
+		return InternalError(c)
+	}
 }
