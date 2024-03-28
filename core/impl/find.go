@@ -26,7 +26,7 @@ func GetDocuments[T any](
 ) (bool, error) {
 	newElements := []T{}
 	ctx := context.Request().Context()
-	log := func(error) {}
+	log := func(err error) { slog.Error("An error occurred: " + err.Error()) }
 	if len(logger) > 0 {
 		firstLogger := logger[0]
 		log = func(err error) {
