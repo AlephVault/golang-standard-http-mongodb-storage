@@ -58,7 +58,7 @@ func capturePanic(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) (err error) {
 		defer func() {
 			if v := recover(); v != nil {
-				slog.Error("Panicked! %s\n\nHere:\n" + string(debug.Stack()))
+				slog.Error(fmt.Sprintf("Panicked! %s\n\nHere:\n", v) + string(debug.Stack()))
 				err = responses.InternalError(c)
 			}
 		}()
