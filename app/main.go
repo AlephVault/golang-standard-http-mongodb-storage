@@ -134,6 +134,9 @@ func MakeServer(
 			settings.Global.ListMaxResults, logger,
 		)
 	}
+	router.Any("/*", func(c echo.Context) error {
+		return responses.NotFound(c)
+	})
 
 	// Create the final application object.
 	slog.Info("Init::Defining the application and applying initial setup")
