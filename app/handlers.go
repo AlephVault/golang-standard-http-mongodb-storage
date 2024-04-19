@@ -48,7 +48,7 @@ func simpleCreate(
 	} else if parsed, ok, err := readJSONBody(ctx, make_, validatorMaker()); ok {
 		if id, err := createOne(ctx, parsed); err == nil {
 			return responses.Created(ctx, id)
-		} else if isDuplicateKeyError(err) {
+		} else if mongo.IsDuplicateKeyError(err) {
 			return responses.DuplicateKey(ctx)
 		} else {
 			logger.Error("An error occurred: " + err.Error())
@@ -142,7 +142,7 @@ func listCreate(
 	if parsed, ok, err := readJSONBody(ctx, make_, validatorMaker()); ok {
 		if id, err := createOne(ctx, parsed); err == nil {
 			return responses.Created(ctx, id)
-		} else if isDuplicateKeyError(err) {
+		} else if mongo.IsDuplicateKeyError(err) {
 			return responses.DuplicateKey(ctx)
 		} else {
 			return err
