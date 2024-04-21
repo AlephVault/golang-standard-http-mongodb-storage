@@ -88,7 +88,11 @@ func requiredIifValidator(fl validator.FieldLevel) bool {
 func makeValidator() *validator.Validate {
 	v := validator.New()
 	v.RegisterTagNameFunc(func(field reflect.StructField) string {
-		return field.Tag.Get("json")
+		name := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
 	})
 	_ = v.RegisterValidation("mdb-name", regexFunction(rxMongoName))
 	_ = v.RegisterValidation("mdb-index-entry", regexFunction(rxMongoIndexEntry))
