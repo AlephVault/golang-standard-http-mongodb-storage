@@ -118,7 +118,7 @@ func InvalidFormat(c echo.Context, errors validator.ValidationErrors) error {
 		errorMessages[namespace] = append(errorMessages[namespace], value.Tag())
 	}
 	return c.JSON(http.StatusBadRequest, echo.Map{
-		"code":   "format:invalid",
+		"code":   "schema:invalid",
 		"errors": errorMessages,
 	})
 }
