@@ -2,7 +2,6 @@ package responses
 
 import (
 	"errors"
-	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -110,11 +109,13 @@ func UnexpectedFormat(c echo.Context) error {
 // response (400) in the gin context, with the errors
 // that must flow to the user.
 func InvalidFormat(c echo.Context, errors validator.ValidationErrors) error {
-	errorMessages := make([]string, len(errors))
-	for index, value := range errors {
-		errorMessages[index] = fmt.Sprintf(
-			"%s: %s", strings.SplitN(value.Namespace(), ".", 2)[1], value.Tag(),
-		)
+	errorMessages := make(map[string][]string)
+	for _, value := range errors {
+		namespace := strings.SplitN(value.Namespace(), ".", 2)[1]
+		if _, ok := errorMessages[namespace]; !ok {
+			errorMessages[namespace] = make([]string, 0)
+		}
+		errorMessages[namespace] = append(errorMessages[namespace], value.Tag())
 	}
 	return c.JSON(http.StatusBadRequest, echo.Map{
 		"code":   "format:invalid",
