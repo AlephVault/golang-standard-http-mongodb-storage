@@ -244,7 +244,7 @@ func makeSimulatedUpdate(
 			ctx.Request().Context(), filter, entity, options.Replace().SetUpsert(true),
 		); err != nil {
 			return nil, err
-		} else if _, err := tmpCollection.UpdateOne(ctx.Request().Context(), filter, bson.M{"$set": updates}); err != nil {
+		} else if _, err := tmpCollection.UpdateOne(ctx.Request().Context(), filter, updates); err != nil {
 			return nil, err
 		} else if result := tmpCollection.FindOne(ctx.Request().Context(), filter); result.Err() != nil {
 			return nil, err
